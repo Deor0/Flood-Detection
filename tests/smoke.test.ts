@@ -17,7 +17,14 @@ describe('test database harness', () => {
     );
     const names = res.rows.map((r) => r.table_name);
     expect(names).toEqual(
-      expect.arrayContaining(['users', 'missing_persons', 'sms_log', 'community_posts']),
+      expect.arrayContaining([
+        'users',
+        'missing_persons',
+        'missing_person_events',
+        'sms_log',
+        'programs',
+        'program_registrations',
+      ]),
     );
   });
 });

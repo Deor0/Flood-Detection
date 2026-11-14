@@ -441,3 +441,53 @@
     font-size: 1.6rem;
   }
 }
+
+/* Loading skeleton */
+.skeletonList {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.skeletonStatus {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.skeletonCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: 0.75rem;
+}
+
+.skeletonLine {
+  height: 0.85rem;
+  border-radius: 0.3rem;
+  background: linear-gradient(90deg, #e4e6fa 25%, #eef0fd 50%, #e4e6fa 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonLineWide {
+  width: 55%;
+  height: 1.1rem;
+}
+
+.skeletonLineShort {
+  width: 30%;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLine {
+    animation: none;
+  }
+}

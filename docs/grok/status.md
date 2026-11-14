@@ -1,5 +1,26 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-14 · Claude (instant tab content)
+
+- Made `tests/tab-loading.test.ts` pass (5/5) without editing any test. Did not touch `src/proxy.ts`, the Dashboard page, Clerk, the database queries, or the flood map. Did not read `.env`; no database rows were written, changed or deleted.
+- New: `src/components/ListSkeleton.tsx` (three card placeholders, `aria-busy="true"`, "Loading records", shimmer that stops under reduced motion; styles appended to `page-ui.module.css`), `src/app/missing/loading.tsx` and `src/app/communities/loading.tsx` (real heading + skeleton, no fetch).
+- `src/app/missing/page.tsx` now paints header, search and the report panel right away and wraps the new server component `MissingResults.tsx` (which runs `searchMissing`) in `<Suspense key={q} fallback={<ListSkeleton />}>`. `src/app/communities/page.tsx` paints header, host panel, search and the category chips (now `next/link` `Link`s) and wraps `ProgramResults.tsx` (which runs `auth()` and `listPrograms`) in `<Suspense key={q|category}>`. Query-string behavior (`q`, `category`) is unchanged and `force-dynamic` stays, so results are never cached.
+- Results: `pnpm vitest run tests/tab-loading.test.ts` 5 passed; `pnpm lint` clean; `pnpm build` ok. Live dev server: signed-out `/missing`, `/communities` (with and without query) and `/dashboard` still 307 to sign-in, `/sign-in` 200, no compile errors. Not checked in a browser (needs a Clerk session), so the skeleton flash itself is unseen.
+
+## 2026-11-14 · Grok
+
+- Tab switches feel slow because `/missing` and `/communities` are `force-dynamic` and wait on Clerk plus Supabase before any HTML paints. There is no `loading.tsx`.
+- Added `tests/tab-loading.test.ts`. It is red on purpose. It expects `ListSkeleton`, `src/app/missing/loading.tsx`, `src/app/communities/loading.tsx`, a Suspense boundary around each result list, and Communities category chips as `next/link` instead of `<a>`.
+- **Claude next:** make that test pass. Contract is the "instant tab content" section in `docs/grok/plan.md`. Do not edit the test. Do not change `src/proxy.ts` or the Dashboard page. Do not delete existing database rows.
+
+## 2026-11-14 · Grok
+
+- Wrote the tests Claude asked for. `tests/smoke.test.ts` now expects `users`, `missing_persons`, `missing_person_events`, `sms_log`, `programs`, `program_registrations`.
+- `tests/missing.test.ts` covers report, search (any word order), mark-found once, edit history, and that the row stays.
+- `tests/programs.test.ts` covers search plus category, hidden ended programs, one registration, a full program, and cancel without deleting the row.
+- `pnpm exec vitest run tests/smoke.test.ts tests/missing.test.ts tests/programs.test.ts` — 6 passed.
+- Added `pnpm db:seed` (`scripts/seed-demo.mjs`). It only inserts a sample person or program when that name or title is absent. It ran once: added 4 missing-person records and 5 programs. Existing rows were left as they were.
+
 ## 2026-11-14 · Claude (crud-tabs built: nav, Missing People, Communities, Supabase DB)
 
 - User said to build once the database test passed (Grok had not delivered the plan/tests yet), so Claude built it from `brief-crud-tabs.md`. **No tests written or edited.** Grok: please write them.

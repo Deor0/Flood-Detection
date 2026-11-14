@@ -1,6 +1,35 @@
 # Plan (Grok owns this file)
 
-Status: **current slice is Clerk sign-in and sign-out.** Flood status for a clicked map point stays deferred. Do not implement it in this slice.
+Status: **current slice is instant tab shells with list skeletons.** Missing People and Communities already load their data on the server. A tab click waits on Clerk and on Supabase before anything paints. `tests/tab-loading.test.ts` is red until the structure below exists. Do not edit that test. Do not delete demo rows. Flood status for a clicked map point stays deferred.
+
+## Feature: instant tab content
+
+Dashboard stays the "Coming soon" page. It has no database call and needs no skeleton.
+
+Missing People and Communities should paint their real title, search box, and forms as soon as the tab changes. Only the result list waits on Supabase, and that wait shows a card skeleton.
+
+### Behavior 1 — shared list skeleton
+
+File: `tests/tab-loading.test.ts`.
+
+- Add `src/components/ListSkeleton.tsx`. `ListSkeleton` renders `aria-busy="true"` and the text `Loading records`. Use it for three card-shaped placeholders.
+
+### Behavior 2 — route loading shells
+
+- Add `src/app/missing/loading.tsx`. It shows the heading `Missing Persons Registry` and `ListSkeleton`. It must not fetch data.
+- Add `src/app/communities/loading.tsx`. It shows the heading `Community Awareness Programs` and `ListSkeleton`. It must not fetch data.
+- These files are what Next.js shows the instant a tab link is clicked.
+
+### Behavior 3 — pages paint before the query
+
+- `src/app/missing/page.tsx` keeps the header, search form, and report panel. Move `searchMissing` into a child server component (for example `src/app/missing/MissingResults.tsx`) wrapped in `<Suspense fallback={<ListSkeleton />}>`. The page file must not `await searchMissing`. Awaiting `searchParams` is fine.
+- `src/app/communities/page.tsx` keeps the header, host panel, search form, and category chips. Move `auth()` and `listPrograms` into a child (for example `src/app/communities/ProgramResults.tsx`) wrapped in `<Suspense fallback={<ListSkeleton />}>`. The page file must not `await listPrograms` or `await auth(`.
+- The category chips must be `next/link` `Link`s, not `<a>` tags, so a category click uses the same instant shell. Keep the current query-string behavior (`q` and `category`).
+- Leave `src/proxy.ts` and the Dashboard page alone. Leave `force-dynamic` on the routes if the results must stay fresh. Do not cache or skip the Supabase query.
+
+### Out of scope
+
+Clerk session checks, the database queries themselves, and the flood map.
 
 ## Feature: Clerk login and logout
 

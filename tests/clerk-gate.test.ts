@@ -36,9 +36,6 @@ function incoming(path: string) {
   return new NextRequest(new URL(path, 'http://localhost:3000'));
 }
 
-// Clerk's middleware type also takes a Next fetch event. This unit test only supplies the request.
-const run = proxy as (req: NextRequest) => Promise<unknown>;
-
 beforeEach(() => {
   protect.mockClear();
 });

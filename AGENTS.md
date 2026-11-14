@@ -44,7 +44,7 @@ Two agents work in this repo. Everything below the Next.js block is the shared c
 
 **Note for test authors:** Clerk needs a real instance, so mock `@clerk/nextjs/server` (`auth`, `clerkMiddleware`, `createRouteMatcher`) in unit tests. `docs/grok/brief-own-auth.md` is obsolete.
 
-**New slice (branch `crud-tabs`, 2026-11-14): top nav + Missing People + Communities.** Brief: `docs/grok/brief-crud-tabs.md`. Grok writes the plan and tests first; Claude implements after they are red. Database is hosted Postgres (`DATABASE_URL`); tests stay on PGlite.
+**New slice (branch `crud-tabs`): instant tab shells.** Missing People and Communities stay server-rendered. `tests/tab-loading.test.ts` is red until each page paints its title and search immediately and shows `ListSkeleton` only for the result list. Category chips on Communities must be `next/link`. See `docs/grok/plan.md`. Do not delete demo rows. `pnpm db:seed` inserts only missing names and titles.
 
 ### Guide for implementing (Claude)
 
