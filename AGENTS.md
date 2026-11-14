@@ -44,6 +44,8 @@ Two agents work in this repo. Everything below the Next.js block is the shared c
 
 **Note for test authors:** Clerk needs a real instance, so mock `@clerk/nextjs/server` (`auth`, `clerkMiddleware`, `createRouteMatcher`) in unit tests. `docs/grok/brief-own-auth.md` is obsolete.
 
+**New slice (branch `crud-tabs`, 2026-11-14): top nav + Missing People + Communities.** Brief: `docs/grok/brief-crud-tabs.md`. Grok writes the plan and tests first; Claude implements after they are red. Database is hosted Postgres (`DATABASE_URL`); tests stay on PGlite.
+
 ### Guide for implementing (Claude)
 
 Read `docs/grok/plan.md` and `docs/grok/status.md` first, run `pnpm test` to see what is red, write code until green, then run `pnpm lint` and `pnpm build`, and append to `status.md`.
