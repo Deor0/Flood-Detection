@@ -1,11 +1,13 @@
 import {
   doublePrecision,
+  index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
-  jsonb,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -17,22 +19,61 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const missingPersons = pgTable('missing_persons', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull(),
-  nameNormalized: text('name_normalized').notNull(),
-  age: integer('age'),
-  lastSeenLocation: text('last_seen_location'),
-  lat: doublePrecision('lat'),
-  lng: doublePrecision('lng'),
-  status: text('status', { enum: ['missing', 'found'] })
-    .notNull()
-    .default('missing'),
-  reporterPhone: text('reporter_phone').notNull(),
-  foundByPhone: text('found_by_phone'),
-  foundAt: timestamp('found_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+/** Records are never deleted: a person moves from 'missing' to 'found', and edits are logged. */
+export const missingPersons = pgTable(
+  'missing_persons',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Shown to people as REG-<number>. */
+    publicNumber: integer('public_number')
+      .notNull()
+      .unique()
+      .generatedAlwaysAsIdentity({ startWith: 1001 }),
+    name: text('name').notNull(),
+    nameNormalized: text('name_normalized').notNull(),
+    age: integer('age'),
+    lastSeenLocation: text('last_seen_location'),
+    lat: doublePrecision('lat'),
+    lng: doublePrecision('lng'),
+    notes: text('notes'),
+    /** Who to contact about this case (free text). */
+    contact: text('contact'),
+    status: text('status', { enum: ['missing', 'found'] })
+      .notNull()
+      .default('missing'),
+    /** Web reports carry the Clerk user id; SMS reports carry a phone. At least one is set. */
+    reporterUserId: text('reporter_user_id'),
+    reporterPhone: text('reporter_phone'),
+    foundByUserId: text('found_by_user_id'),
+    foundByPhone: text('found_by_phone'),
+    foundNote: text('found_note'),
+    foundAt: timestamp('found_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('missing_persons_name_idx').on(t.nameNormalized),
+    index('missing_persons_status_idx').on(t.status),
+  ],
+);
+
+/** Append-only history of a missing-person record. Never updated or deleted. */
+export const missingPersonEvents = pgTable(
+  'missing_person_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    missingPersonId: uuid('missing_person_id')
+      .notNull()
+      .references(() => missingPersons.id),
+    kind: text('kind', { enum: ['reported', 'edited', 'found'] }).notNull(),
+    actorUserId: text('actor_user_id'),
+    actorPhone: text('actor_phone'),
+    /** For edits: { field: { from, to } }. For found: { note }. */
+    changes: jsonb('changes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('missing_person_events_person_idx').on(t.missingPersonId)],
+);
 
 /** Append-only: never update or delete rows. */
 export const smsLog = pgTable('sms_log', {
@@ -45,14 +86,46 @@ export const smsLog = pgTable('sms_log', {
   receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
 });
 
-export const communityPosts = pgTable('community_posts', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  authorId: uuid('author_id')
-    .notNull()
-    .references(() => users.id),
-  title: text('title').notNull(),
-  body: text('body').notNull(),
-  location: text('location'),
-  eventDate: timestamp('event_date', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const PROGRAM_CATEGORIES = [
+  'first_aid_cpr',
+  'flood_landslide_safety',
+  'volunteer_briefing',
+  'evacuation_drill',
+  'water_sanitation',
+] as const;
+export type ProgramCategory = (typeof PROGRAM_CATEGORIES)[number];
+
+/** Community awareness programs (drills, workshops, briefings). */
+export const programs = pgTable(
+  'programs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    category: text('category', { enum: PROGRAM_CATEGORIES }).notNull(),
+    organizer: text('organizer').notNull(),
+    location: text('location').notNull(),
+    topics: text('topics'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** null = open access, no limit. */
+    capacity: integer('capacity'),
+    createdByUserId: text('created_by_user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('programs_starts_at_idx').on(t.startsAt)],
+);
+
+/** A registration is cancelled by setting cancelled_at, never by deleting the row. */
+export const programRegistrations = pgTable(
+  'program_registrations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programs.id),
+    userId: text('user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  },
+  (t) => [unique('program_registrations_user_program').on(t.programId, t.userId)],
+);

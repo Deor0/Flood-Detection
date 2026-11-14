@@ -17,14 +17,6 @@ body {
     sans-serif;
 }
 
-/* Profile / sign-out menu (Clerk's UserButton), top right on every signed-in page. */
-.app-user {
-  position: fixed;
-  top: 0.75rem;
-  right: 1rem;
-  z-index: 10;
-}
-
 /* Centered frame around Clerk's sign-in and sign-up cards. */
 .auth-frame {
   display: flex;

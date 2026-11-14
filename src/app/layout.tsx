@@ -1,6 +1,7 @@
-import { ClerkProvider, Show, UserButton } from '@clerk/nextjs';
+import { ClerkProvider, Show } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { Nav } from '@/components/Nav';
 import './globals.css';
 
 export const metadata: Metadata = { title: 'Flood Response' };
@@ -10,13 +11,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <ClerkProvider>
-          <div className="app-user">
-            <Suspense>
-              <Show when="signed-in">
-                <UserButton />
-              </Show>
-            </Suspense>
-          </div>
+          <Suspense>
+            <Show when="signed-in">
+              <Nav />
+            </Show>
+          </Suspense>
           {children}
         </ClerkProvider>
       </body>

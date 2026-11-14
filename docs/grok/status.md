@@ -1,5 +1,31 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-14 · Claude (crud-tabs built: nav, Missing People, Communities, Supabase DB)
+
+- User said to build once the database test passed (Grok had not delivered the plan/tests yet), so Claude built it from `brief-crud-tabs.md`. **No tests written or edited.** Grok: please write them.
+- **Database:** Supabase Postgres via the **Session pooler** `DATABASE_URL` (the direct host is IPv6-only and failed). `drizzle.config.ts` now loads `.env` (`process.loadEnvFile`). The unapplied 0000 migration was regenerated from the new schema (`0000_brown_shatterstar.sql`) and **applied to Supabase**: tables `users`, `sms_log`, `missing_persons`, `missing_person_events`, `programs`, `program_registrations`. `community_posts` was dropped from the schema (replaced).
+- **Schema:** `missing_persons` gains `public_number` (identity from 1001, shown `REG-01001`), `notes`, `contact`, `reporter_user_id`, `found_by_user_id`, `found_note`, `updated_at`; `reporter_phone` is now nullable. `missing_person_events` is the append-only history. `programs` + `program_registrations` (unique per user and program, `cancelled_at` instead of delete).
+- **Core logic (pure, takes a `db` and an actor, PGlite-testable):** `src/core/missing/{names,validate,service}.ts` (`reportMissing`, `searchMissing`, `getMissing`, `markFound`, `editMissing`, `missingHistory`, `normalizeName`, `lastFirst`, `publicId`) and `src/core/programs/{categories,service}.ts` (`createProgram`, `listPrograms`, `registerForProgram`, `cancelRegistration`, `cleanProgram`). Row locks (`for update`) make marking found and registering safe under concurrency.
+- **Decisions I made (open questions in the brief):** a found record cannot be re-opened; ended programs are hidden (upcoming and in-progress shown, soonest first); registrations can be cancelled (`cancelled_at`) and re-registered; search matches every word in any order, ignoring case and accents, and a punctuation-only query lists everything; start/end times from the form are read in the server's time zone.
+- **UI:** `src/components/Nav.tsx` (Dashboard, Missing People, Communities + Clerk `UserButton`, active tab via `aria-current`) rendered in the layout inside `<Show when="signed-in">`; `/missing` and `/communities` server pages with server actions (`actions.ts`) and client forms; shared styles in `src/components/page-ui.module.css`.
+- **Checked:** lint clean (1 warning in Grok's `clerk-gate.test.ts`), build ok, live dev server: signed-out tab URLs redirect to sign-in. Core logic verified with a throwaway PGlite script (not a repo test): report, search (order/accents/partial), found once + idempotent, edit diff + history, create/validate programs, list/filter/search, register/cancel/capacity, 6 concurrent registrations on a 3-seat program yields exactly 3. Read-only queries ran against the real Supabase DB. **Not checked in a browser** (needs a Clerk session).
+- **Failing test for Grok:** `tests/smoke.test.ts` asserts a `community_posts` table, which the brief replaced. Claude did not edit it. Update the expected tables to `users, missing_persons, missing_person_events, sms_log, programs, program_registrations`. (11/12 green otherwise.)
+- Still open: Clerk device trust (can demand an emailed code at first sign-in on a new device); `users` table (phone + password hash) no longer matches Clerk; the Auth0 entry in `.mcp.json` is unused.
+
+## 2026-11-14 · Claude (supabase mcp)
+
+- Added the Supabase MCP server to `.mcp.json` (http) for project ref `qmkvuzjcfspyvzttweez` with features docs, account, database, debugging, development, functions, branching, feedback, notebooks, storage.
+- User must authenticate via `claude /mcp` (browser OAuth) and approve the server.
+- The hosted database for the crud-tabs slice is Supabase (Postgres). The user still has to put `DATABASE_URL` in `.env`; Claude does not read `.env`.
+
+## 2026-11-14 · Claude (new branch `crud-tabs`: nav + Missing People + Communities)
+
+- Created branch `crud-tabs` from `main` (`e81a7e5`). The user wants a top nav (Dashboard, Missing People, Communities, profile), a Missing People tab, and a Communities tab, with their reference screenshots.
+- User answers: hosted Postgres (Neon or Supabase); Missing People = search, report, mark found, edit (never delete); Communities = host a program, register to attend, search + category filters (no share/directions/export yet); Grok writes the plan and tests first.
+- Wrote `docs/grok/brief-crud-tabs.md` with the layouts, rules, proposed schema (extend `missing_persons`, add `missing_person_events`, replace `community_posts` with `programs` + `program_registrations`) and where the logic should live (`src/core/missing`, `src/core/programs`, pure functions taking a `db` and an actor so the SMS commands can reuse them). **No code written yet.**
+- **Grok next:** refine the brief into behaviors in `plan.md` and write the failing tests (nav, missing search/report/found/edit + history, programs create/register/search/filter).
+- **User next:** create the hosted Postgres database and put its connection string in `.env` as `DATABASE_URL`; tell Claude when done.
+
 ## 2026-11-14 · Claude (custom Clerk sign-in/sign-up form; conflict with two of Grok's tests)
 
 - User: saw Clerk's prebuilt sign-in (email first, password on the next step) and asked for the password box on the same screen, with email at account creation. They chose **our own form with Clerk behind it** over the prebuilt components.
