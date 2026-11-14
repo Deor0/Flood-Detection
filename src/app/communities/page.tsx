@@ -7,6 +7,7 @@ import { ListSkeleton } from '@/components/ListSkeleton';
 import styles from '@/components/page-ui.module.css';
 import { ProgramResults } from './ProgramResults';
 import { HostForm } from './ProgramForms';
+import { MyPrograms } from './MyPrograms';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,16 +36,23 @@ export default async function CommunitiesPage({
         <div>
           <h1 className={styles.title}>Community Awareness Programs</h1>
           <p className={styles.lede}>
-            Verified local disaster preparedness drills, first-aid workshops, flood safety sessions,
-            and emergency volunteer briefings happening nearby.
+            Disaster preparedness drills, first-aid workshops, flood safety sessions, and emergency
+            volunteer briefings reviewed by our team.
           </p>
         </div>
       </div>
 
       <details className={styles.panel}>
         <summary>+ Host / Register Program</summary>
+        <p className={styles.lede}>
+          New programs are submitted for review and listed once an admin approves them.
+        </p>
         <HostForm />
       </details>
+
+      <Suspense fallback={<ListSkeleton />}>
+        <MyPrograms />
+      </Suspense>
 
       <form method="get" className={styles.search} role="search">
         {category && <input type="hidden" name="category" value={category} />}

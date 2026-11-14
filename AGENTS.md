@@ -46,6 +46,8 @@ Two agents work in this repo. Everything below the Next.js block is the shared c
 
 **New slice (branch `crud-tabs`): instant tab shells.** Missing People and Communities stay server-rendered. `tests/tab-loading.test.ts` is red until each page paints its title and search immediately and shows `ListSkeleton` only for the result list. Category chips on Communities must be `next/link`. See `docs/grok/plan.md`. Do not delete demo rows. `pnpm db:seed` inserts only missing names and titles.
 
+**Next slice (branch `admin-dashboard`, 2026-11-14): admin role, supervised changes, admin dashboard.** Brief: `docs/grok/brief-admin.md`. Grok writes the plan and tests first; Claude implements after they are red. Rule: the owner of a post edits it directly; everyone else needs admin approval.
+
 ### Guide for implementing (Claude)
 
 Read `docs/grok/plan.md` and `docs/grok/status.md` first, run `pnpm test` to see what is red, write code until green, then run `pnpm lint` and `pnpm build`, and append to `status.md`.

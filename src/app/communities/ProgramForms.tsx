@@ -6,7 +6,13 @@ import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { FieldError, StateBanner, inputClass } from '@/components/FormBits';
 import styles from '@/components/page-ui.module.css';
 import type { FormState } from '@/app/form-state';
-import { cancelAction, hostAction, registerAction } from './actions';
+import {
+  cancelAction,
+  cancelProgramAction,
+  editProgramAction,
+  hostAction,
+  registerAction,
+} from './actions';
 
 const initial: FormState = {};
 
@@ -77,7 +83,7 @@ export function HostForm() {
       </div>
       <div className={`${styles.formActions} ${styles.span2}`}>
         <button type="submit" className={styles.button} disabled={pending}>
-          {pending ? 'Listing…' : 'List program'}
+          {pending ? 'Submitting…' : 'Submit for review'}
         </button>
         <StateBanner state={state} />
       </div>
@@ -118,6 +124,146 @@ export function RegisterButton({
             : isFull
               ? 'Full'
               : 'Register to Attend'}
+      </button>
+      {state.message && !state.ok && (
+        <p role="alert" className={styles.error}>
+          {state.message}
+        </p>
+      )}
+    </>
+  );
+}
+
+export type EditableProgram = {
+  id: string;
+  title: string;
+  category: string;
+  organizer: string;
+  location: string;
+  topics: string | null;
+  startsAt: string; // ISO
+  endsAt: string; // ISO
+  capacity: number | null;
+};
+
+/** ISO instant -> "YYYY-MM-DDTHH:mm" in the browser's local zone, for datetime-local. */
+function toLocalInput(iso: string) {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** Inline edit for the host or an admin. The server decides who may save. */
+export function EditProgramForm({
+  program,
+  save = editProgramAction,
+}: {
+  program: EditableProgram;
+  /** Defaults to the host/admin action; the admin page passes its own admin-only action. */
+  save?: (programId: string, prev: FormState, fd: FormData) => Promise<FormState>;
+}) {
+  const [state, action, pending] = useActionState(
+    (prev: FormState, fd: FormData) => save(program.id, prev, fd),
+    initial,
+  );
+  // Dates are formatted in the browser (ref callback, no render mismatch with the server's zone).
+  const dateRef = (iso: string) => (el: HTMLInputElement | null) => {
+    if (el && !el.value) el.value = toLocalInput(iso);
+  };
+
+  const id = (n: string) => `edit-${program.id}-${n}`;
+  const field = (name: string) => ({
+    id: id(name),
+    name,
+    className: inputClass(state, name),
+    'aria-invalid': !!state.fields?.[name],
+  });
+
+  return (
+    <form action={action} noValidate className={styles.formGrid}>
+      <div className={`${styles.field} ${styles.span2}`}>
+        <label htmlFor={id('title')}>Title</label>
+        <input {...field('title')} defaultValue={program.title} maxLength={150} />
+        <FieldError state={state} name="title" />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={id('category')}>Category</label>
+        <select {...field('category')} defaultValue={program.category}>
+          {PROGRAM_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
+        <FieldError state={state} name="category" />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={id('organizer')}>Organized by</label>
+        <input {...field('organizer')} defaultValue={program.organizer} maxLength={150} />
+        <FieldError state={state} name="organizer" />
+      </div>
+      <div className={`${styles.field} ${styles.span2}`}>
+        <label htmlFor={id('location')}>Location</label>
+        <input {...field('location')} defaultValue={program.location} maxLength={200} />
+        <FieldError state={state} name="location" />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={id('startsAt')}>Starts</label>
+        <input {...field('startsAt')} type="datetime-local" ref={dateRef(program.startsAt)} />
+        <FieldError state={state} name="startsAt" />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={id('endsAt')}>Ends</label>
+        <input {...field('endsAt')} type="datetime-local" ref={dateRef(program.endsAt)} />
+        <FieldError state={state} name="endsAt" />
+      </div>
+      <div className={`${styles.field} ${styles.span2}`}>
+        <label htmlFor={id('topics')}>Key topics</label>
+        <textarea
+          {...field('topics')}
+          defaultValue={program.topics ?? ''}
+          rows={2}
+          maxLength={500}
+        />
+        <FieldError state={state} name="topics" />
+      </div>
+      <div className={styles.field}>
+        <label htmlFor={id('capacity')}>Capacity (leave empty for open access)</label>
+        <input {...field('capacity')} defaultValue={program.capacity ?? ''} inputMode="numeric" />
+        <FieldError state={state} name="capacity" />
+      </div>
+      <div className={`${styles.formActions} ${styles.span2}`}>
+        <button type="submit" className={styles.button} disabled={pending}>
+          {pending ? 'Saving…' : 'Save changes'}
+        </button>
+        <StateBanner state={state} />
+      </div>
+    </form>
+  );
+}
+
+/** Cancels a whole program (host or admin). Registrations are kept. */
+export function CancelProgramButton({
+  programId,
+  cancel = cancelProgramAction,
+}: {
+  programId: string;
+  cancel?: (programId: string) => Promise<FormState>;
+}) {
+  const [pending, start] = useTransition();
+  const [state, setState] = useState<FormState>({});
+  return (
+    <>
+      <button
+        type="button"
+        disabled={pending}
+        className={`${styles.button} ${styles.buttonLight} ${styles.smallButton}`}
+        onClick={() => {
+          if (!window.confirm('Cancel this program? Registered people keep their records.')) return;
+          start(async () => setState(await cancel(programId)));
+        }}
+      >
+        {pending ? 'Cancelling…' : 'Cancel program'}
       </button>
       {state.message && !state.ok && (
         <p role="alert" className={styles.error}>

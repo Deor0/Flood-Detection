@@ -1,0 +1,33 @@
+.attendees {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.feed {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feedItem {
+  padding: 0.7rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e3e4f2;
+  border-radius: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.from {
+  color: var(--danger);
+}
+
+.to {
+  color: var(--ok);
+}
+
+.muted {
+  color: var(--muted);
+}

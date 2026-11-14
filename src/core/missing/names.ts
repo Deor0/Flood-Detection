@@ -1,10 +1,28 @@
-/** Lowercase, accent-free, punctuation-free, single-spaced: "Miller, José" -> "miller jose". */
+const SPECIAL: Record<string, string> = {
+  ø: 'o',
+  ł: 'l',
+  đ: 'd',
+  ß: 'ss',
+  æ: 'ae',
+  œ: 'oe',
+  ð: 'd',
+  þ: 'th',
+};
+
+/**
+ * Lowercase, accent-free, punctuation-free, single-spaced: "Miller, José" -> "miller jose".
+ * Accents are removed only from Latin letters (marks that belong to Indic, Arabic and other
+ * scripts are part of the letter and are kept). Letters and digits of any script are kept;
+ * apostrophes, hyphens and other punctuation become spaces.
+ */
 export function normalizeName(name: string): string {
   return name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .normalize('NFD')
+    .replace(/(\p{Script=Latin})\p{M}+/gu, '$1')
+    .normalize('NFC')
+    .replace(/[øłđßæœðþ]/g, (c) => SPECIAL[c])
+    .replace(/[^\p{L}\p{N}\p{M}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

@@ -10,7 +10,7 @@ Grok plans and writes the unit tests (test-first); Claude only writes implementa
 
 ## Status
 
-Only the scaffolding layer exists. Features are built test-first (TDD), one behavior at a time. Most `src/core`, `src/model`, `src/sms/{twilio,textbelt}.ts` files are empty stubs, and `POST /api/sms` returns 501. Auth is Clerk; `/dashboard`, `/communities`, `/missing` are empty placeholder pages showing only their name. Don't assume business logic is present.
+Only the scaffolding layer exists. Features are built test-first (TDD), one behavior at a time. Most `src/core`, `src/model`, `src/sms/{twilio,textbelt}.ts` files are empty stubs, and `POST /api/sms` returns 501. Auth is Clerk with an admin role (`publicMetadata.role === 'admin'`); `/dashboard`, `/communities`, `/missing` are empty placeholder pages showing only their name. Don't assume business logic is present.
 
 ## Commands
 
@@ -30,6 +30,10 @@ Requires Node >= 20 (default shell Node may be older; use `fnm`/`nvm` to select 
 - **DB:** Drizzle + Postgres (`postgres-js`). `getDb()` in `src/db/index.ts` is lazy so builds work without `DATABASE_URL`. Migrations are generated into `src/db/migrations` (ESLint/Prettier ignore it; don't hand-edit).
 - **Flood model:** precomputed per-region GeoJSON in `public/geo/`, read by `src/model`. No live Python.
 - **Tests:** `tests/db.ts` `createTestDb()` returns a fresh in-memory PGlite DB with all migrations applied; call it once per test file (`beforeAll`). No Docker. `@/` aliases `src/` in both TS and Vitest.
+
+## Permissions and admin
+
+All rules live in `src/core/permissions.ts` (who may edit/see/manage) and `src/lib/roles.ts` (`getViewer`, `requireAdmin` for server actions, `adminPageGuard` for pages, 404 for non-admins). Never rely on hiding a button: every server action and page checks on the server. Normal users: report missing people (10/day), mark found, suggest edits (queued for admin approval), host programs (queued as `pending`, max 5), register. The reporter edits their own record and the host edits their own program directly (logged). Only admins approve/reject, re-open found records, see contact details of others' records, attendee lists, and manage users. Admin screens live under `src/app/admin/*`. Nothing is ever deleted: rejection, cancel and re-open are statuses/events.
 
 ## Environment
 

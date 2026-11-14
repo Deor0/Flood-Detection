@@ -1,0 +1,89 @@
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pending {
+  background: #fef6e0;
+  color: #93370d;
+}
+
+.approved {
+  background: #ecfdf3;
+  color: var(--ok);
+}
+
+.rejected,
+.cancelled {
+  background: #fef3f2;
+  color: var(--danger);
+}
+
+.reason {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.card {
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e3e4f2;
+  border-radius: 0.75rem;
+}
+
+.cardList {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardTitle {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 1.05rem;
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.details > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.details[open] > summary {
+  margin-bottom: 0.8rem;
+}
+
+.diff {
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+}

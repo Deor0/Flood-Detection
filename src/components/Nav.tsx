@@ -12,14 +12,15 @@ const TABS = [
 ] as const;
 
 /** Top bar for signed-in pages. The profile menu (UserButton) includes sign out. */
-export function Nav() {
+export function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname() ?? '';
+  const tabs = isAdmin ? [...TABS, { href: '/admin', label: 'Admin' }] : TABS;
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>
         <span className={styles.brand}>FLOOD RESPONSE</span>
         <nav aria-label="Main" className={styles.tabs}>
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
             return (
               <Link

@@ -1,6 +1,7 @@
 import { ClerkProvider, Show } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { AdminNavGate } from '@/components/AdminNavGate';
 import { Nav } from '@/components/Nav';
 import './globals.css';
 
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ClerkProvider>
           <Suspense>
             <Show when="signed-in">
-              <Nav />
+              <Suspense fallback={<Nav />}>
+                <AdminNavGate />
+              </Suspense>
             </Show>
           </Suspense>
           {children}

@@ -1,11 +1,20 @@
-import { and, asc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm';
 import type { AppDb } from '@/db/types';
 import {
   PROGRAM_CATEGORIES,
+  programEvents,
   programRegistrations,
   programs,
   type ProgramCategory,
 } from '@/db/schema';
+import { LIMITS, canManageProgram } from '@/core/permissions';
+
+/** A plain user id (treated as a non-admin) or an actor object. */
+export type ProgramActor = string | { userId: string; isAdmin?: boolean };
+const normActor = (a: ProgramActor) =>
+  typeof a === 'string'
+    ? { userId: a, isAdmin: false }
+    : { userId: a.userId, isAdmin: !!a.isAdmin };
 
 export type FieldErrors<K extends string> = Partial<Record<K, string>>;
 
@@ -90,20 +99,48 @@ export function cleanProgram(input: ProgramInput): {
 
 export type CreateProgramResult =
   | { ok: true; program: typeof programs.$inferSelect }
-  | { ok: false; fields: FieldErrors<keyof ProgramInput> };
+  | { ok: false; tooManyPending: true; fields?: undefined }
+  | { ok: false; fields: FieldErrors<keyof ProgramInput>; tooManyPending?: undefined };
 
+/** Non-admins submit a pending program (capped); admins publish directly. */
 export async function createProgram(
   db: AppDb,
-  userId: string,
+  actorIn: ProgramActor,
   input: ProgramInput,
 ): Promise<CreateProgramResult> {
+  const actor = normActor(actorIn);
   const { value, errors } = cleanProgram(input);
   if (!value) return { ok: false, fields: errors };
-  const [program] = await db
-    .insert(programs)
-    .values({ ...value, createdByUserId: userId })
-    .returning();
-  return { ok: true, program };
+  return db.transaction(async (tx) => {
+    if (!actor.isAdmin) {
+      // Serialize one user's submissions so the cap cannot be raced past.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${'program-submit:' + actor.userId}))`,
+      );
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)`.mapWith(Number) })
+        .from(programs)
+        .where(and(eq(programs.createdByUserId, actor.userId), eq(programs.status, 'pending')));
+      if (n >= LIMITS.pendingProgramsPerUser) return { ok: false, tooManyPending: true } as const;
+    }
+    const now = new Date();
+    const [program] = await tx
+      .insert(programs)
+      .values({
+        ...value,
+        createdByUserId: actor.userId,
+        status: actor.isAdmin ? 'approved' : 'pending',
+        reviewedByUserId: actor.isAdmin ? actor.userId : null,
+        reviewedAt: actor.isAdmin ? now : null,
+      })
+      .returning();
+    await tx.insert(programEvents).values({
+      programId: program.id,
+      kind: actor.isAdmin ? 'approved' : 'submitted',
+      actorUserId: actor.userId,
+    });
+    return { ok: true, program } as const;
+  });
 }
 
 export type ProgramListItem = typeof programs.$inferSelect & {
@@ -124,7 +161,7 @@ export async function listPrograms(
   opts: { q?: string; category?: string; userId?: string; now?: Date } = {},
 ): Promise<ProgramListItem[]> {
   const now = opts.now ?? new Date();
-  const conditions = [gte(programs.endsAt, now)];
+  const conditions = [gte(programs.endsAt, now), eq(programs.status, 'approved')];
   const category = PROGRAM_CATEGORIES.find((c) => c === opts.category);
   if (category) conditions.push(eq(programs.category, category));
   const q = (opts.q ?? '').trim();
@@ -172,7 +209,8 @@ export async function listPrograms(
 }
 
 export type RegisterResult =
-  { ok: true } | { ok: false; reason: 'not_found' | 'full' | 'already_registered' | 'ended' };
+  | { ok: true }
+  | { ok: false; reason: 'not_found' | 'not_open' | 'full' | 'already_registered' | 'ended' };
 
 /** One active registration per person per program. Capacity is enforced under a row lock. */
 export async function registerForProgram(
@@ -189,6 +227,7 @@ export async function registerForProgram(
       .for('update')
       .limit(1);
     if (!program) return { ok: false, reason: 'not_found' } as const;
+    if (program.status !== 'approved') return { ok: false, reason: 'not_open' } as const;
     if (program.endsAt < now) return { ok: false, reason: 'ended' } as const;
 
     const [existing] = await tx
@@ -244,4 +283,262 @@ export async function cancelRegistration(
     )
     .returning({ id: programRegistrations.id });
   return { ok: updated.length > 0 };
+}
+
+const registeredCountSql =
+  sql<number>`count(${programRegistrations.id}) filter (where ${programRegistrations.cancelledAt} is null)`.mapWith(
+    Number,
+  );
+
+export type MyProgram = typeof programs.$inferSelect & { registered: number };
+
+/** Every program the user created, in any status, newest first. */
+export async function listMyPrograms(db: AppDb, userId: string): Promise<MyProgram[]> {
+  const rows = await db
+    .select({ program: programs, registered: registeredCountSql })
+    .from(programs)
+    .leftJoin(programRegistrations, eq(programRegistrations.programId, programs.id))
+    .where(eq(programs.createdByUserId, userId))
+    .groupBy(programs.id)
+    .orderBy(desc(programs.createdAt));
+  return rows.map(({ program, registered }) => ({ ...program, registered }));
+}
+
+/** Every program in every status with its active registration count (admin view). */
+export async function listAllPrograms(db: AppDb): Promise<MyProgram[]> {
+  const rows = await db
+    .select({ program: programs, registered: registeredCountSql })
+    .from(programs)
+    .leftJoin(programRegistrations, eq(programRegistrations.programId, programs.id))
+    .groupBy(programs.id)
+    .orderBy(desc(programs.createdAt));
+  return rows.map(({ program, registered }) => ({ ...program, registered }));
+}
+
+/** Pending programs, oldest first (the review queue). */
+export async function listPendingPrograms(db: AppDb) {
+  return db
+    .select()
+    .from(programs)
+    .where(eq(programs.status, 'pending'))
+    .orderBy(asc(programs.createdAt));
+}
+
+export type ReviewResult =
+  | { ok: true; program: typeof programs.$inferSelect }
+  | { ok: false; reason: 'forbidden' | 'not_found' | 'not_pending' | 'invalid' };
+
+async function review(
+  db: AppDb,
+  actorIn: ProgramActor,
+  id: string,
+  decision: 'approved' | 'rejected',
+  reason?: string,
+): Promise<ReviewResult> {
+  const actor = normActor(actorIn);
+  if (!actor.isAdmin) return { ok: false, reason: 'forbidden' };
+  let cleanReason: string | null = null;
+  if (decision === 'rejected') {
+    cleanReason = (reason ?? '').trim();
+    if (cleanReason.length < 3 || cleanReason.length > 500) return { ok: false, reason: 'invalid' };
+  }
+  return db.transaction(async (tx) => {
+    const [program] = await tx
+      .select()
+      .from(programs)
+      .where(eq(programs.id, id))
+      .for('update')
+      .limit(1);
+    if (!program) return { ok: false, reason: 'not_found' } as const;
+    if (program.status !== 'pending') return { ok: false, reason: 'not_pending' } as const;
+    const now = new Date();
+    const [updated] = await tx
+      .update(programs)
+      .set({
+        status: decision,
+        reviewedByUserId: actor.userId,
+        reviewedAt: now,
+        rejectionReason: cleanReason,
+        updatedAt: now,
+      })
+      .where(eq(programs.id, id))
+      .returning();
+    await tx.insert(programEvents).values({
+      programId: id,
+      kind: decision === 'approved' ? 'approved' : 'rejected',
+      actorUserId: actor.userId,
+      reason: cleanReason,
+    });
+    return { ok: true, program: updated } as const;
+  });
+}
+
+export const approveProgram = (db: AppDb, actor: ProgramActor, id: string) =>
+  review(db, actor, id, 'approved');
+
+export const rejectProgram = (db: AppDb, actor: ProgramActor, id: string, reason: string) =>
+  review(db, actor, id, 'rejected', reason);
+
+export type EditResult =
+  | { ok: true; program: typeof programs.$inferSelect; changes: Record<string, unknown> }
+  | { ok: false; reason: 'forbidden' | 'not_found' | 'cancelled' | 'capacity_below_registered' }
+  | { ok: false; reason: 'invalid'; fields: FieldErrors<keyof ProgramInput> };
+
+const EDITABLE = [
+  'title',
+  'category',
+  'organizer',
+  'location',
+  'topics',
+  'startsAt',
+  'endsAt',
+  'capacity',
+] as const;
+
+/** Admin or host. Applies at once and logs {field:{from,to}}. */
+export async function editProgram(
+  db: AppDb,
+  actorIn: ProgramActor,
+  id: string,
+  input: ProgramInput,
+): Promise<EditResult> {
+  const actor = normActor(actorIn);
+  const { value, errors } = cleanProgram(input);
+  return db.transaction(async (tx) => {
+    const [program] = await tx
+      .select()
+      .from(programs)
+      .where(eq(programs.id, id))
+      .for('update')
+      .limit(1);
+    if (!program) return { ok: false, reason: 'not_found' } as const;
+    if (!canManageProgram(actor, program)) return { ok: false, reason: 'forbidden' } as const;
+    if (!value) return { ok: false, reason: 'invalid', fields: errors } as const;
+    if (program.status === 'cancelled' && !actor.isAdmin)
+      return { ok: false, reason: 'cancelled' } as const;
+
+    if (value.capacity !== null) {
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)`.mapWith(Number) })
+        .from(programRegistrations)
+        .where(
+          and(eq(programRegistrations.programId, id), isNull(programRegistrations.cancelledAt)),
+        );
+      if (value.capacity < n) return { ok: false, reason: 'capacity_below_registered' } as const;
+    }
+
+    const norm = (v: unknown) => (v instanceof Date ? v.toISOString() : (v ?? null));
+    const changes: Record<string, { from: unknown; to: unknown }> = {};
+    for (const f of EDITABLE) {
+      const from = norm(program[f]);
+      const to = norm(value[f]);
+      if (from !== to) changes[f] = { from, to };
+    }
+    if (Object.keys(changes).length === 0) return { ok: true, program, changes } as const;
+
+    const resubmit = program.status === 'rejected' && !actor.isAdmin;
+    const now = new Date();
+    const [updated] = await tx
+      .update(programs)
+      .set({
+        ...value,
+        updatedAt: now,
+        ...(resubmit ? { status: 'pending' as const, rejectionReason: null } : {}),
+      })
+      .where(eq(programs.id, id))
+      .returning();
+    await tx.insert(programEvents).values({
+      programId: id,
+      kind: 'edited',
+      actorUserId: actor.userId,
+      changes,
+    });
+    if (resubmit)
+      await tx
+        .insert(programEvents)
+        .values({ programId: id, kind: 'submitted', actorUserId: actor.userId });
+    return { ok: true, program: updated, changes } as const;
+  });
+}
+
+export type CancelProgramResult =
+  { ok: true } | { ok: false; reason: 'forbidden' | 'not_found' | 'already_cancelled' };
+
+/** Admin or host. Sets status 'cancelled'; registrations stay as rows. */
+export async function cancelProgram(
+  db: AppDb,
+  actorIn: ProgramActor,
+  id: string,
+  reason?: string,
+): Promise<CancelProgramResult> {
+  const actor = normActor(actorIn);
+  return db.transaction(async (tx) => {
+    const [program] = await tx
+      .select()
+      .from(programs)
+      .where(eq(programs.id, id))
+      .for('update')
+      .limit(1);
+    if (!program) return { ok: false, reason: 'not_found' } as const;
+    if (!canManageProgram(actor, program)) return { ok: false, reason: 'forbidden' } as const;
+    if (program.status === 'cancelled') return { ok: false, reason: 'already_cancelled' } as const;
+    await tx
+      .update(programs)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(eq(programs.id, id));
+    await tx.insert(programEvents).values({
+      programId: id,
+      kind: 'cancelled',
+      actorUserId: actor.userId,
+      reason: reason?.trim() || null,
+    });
+    return { ok: true } as const;
+  });
+}
+
+/** Admin only: active registrations, oldest first. */
+export async function listAttendees(
+  db: AppDb,
+  actorIn: ProgramActor,
+  programId: string,
+): Promise<
+  | { ok: true; attendees: { userId: string; registeredAt: Date }[] }
+  | { ok: false; reason: 'forbidden' }
+> {
+  if (!normActor(actorIn).isAdmin) return { ok: false, reason: 'forbidden' };
+  const rows = await db
+    .select({ userId: programRegistrations.userId, registeredAt: programRegistrations.createdAt })
+    .from(programRegistrations)
+    .where(
+      and(eq(programRegistrations.programId, programId), isNull(programRegistrations.cancelledAt)),
+    )
+    .orderBy(asc(programRegistrations.createdAt));
+  return { ok: true, attendees: rows };
+}
+
+/** Newest first. */
+export async function programHistory(db: AppDb, programId: string) {
+  return db
+    .select()
+    .from(programEvents)
+    .where(eq(programEvents.programId, programId))
+    .orderBy(desc(programEvents.createdAt));
+}
+
+/** Admin feed of recent host/admin edits with the program title. */
+export async function listRecentProgramEdits(db: AppDb, limit = 20) {
+  return db
+    .select({
+      id: programEvents.id,
+      programId: programEvents.programId,
+      title: programs.title,
+      actorUserId: programEvents.actorUserId,
+      changes: programEvents.changes,
+      createdAt: programEvents.createdAt,
+    })
+    .from(programEvents)
+    .innerJoin(programs, eq(programs.id, programEvents.programId))
+    .where(eq(programEvents.kind, 'edited'))
+    .orderBy(desc(programEvents.createdAt))
+    .limit(limit);
 }

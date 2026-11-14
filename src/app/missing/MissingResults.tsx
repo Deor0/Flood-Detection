@@ -1,16 +1,25 @@
 import { CheckCircle2, CircleHelp } from 'lucide-react';
 import { getDb } from '@/db';
 import { lastFirst, publicId } from '@/core/missing/names';
-import { searchMissing } from '@/core/missing/service';
+import { redactForViewer, searchMissing } from '@/core/missing/service';
+import { canEditMissingDirectly } from '@/core/permissions';
+import { getViewer } from '@/lib/roles';
 import styles from '@/components/page-ui.module.css';
 import { timeAgo } from '@/lib/time';
 import { PersonActions } from './MissingForms';
 
 /** The result list. This is the only part of the page that waits on the database. */
 export async function MissingResults({ q }: { q: string }) {
-  let people: Awaited<ReturnType<typeof searchMissing>> = [];
+  const viewer = await getViewer();
+  const actor = { userId: viewer.userId ?? undefined, isAdmin: viewer.isAdmin };
+  let people: (Awaited<ReturnType<typeof searchMissing>>[number] & { canEditDirectly: boolean })[] =
+    [];
   try {
-    people = await searchMissing(getDb(), q);
+    // Contact is stripped here on the server, before anything reaches the client component.
+    people = (await searchMissing(getDb(), q)).map((p) => ({
+      ...redactForViewer(p, actor),
+      canEditDirectly: canEditMissingDirectly(actor, p),
+    }));
   } catch (err) {
     console.error('missing page load failed', err);
     return (
@@ -69,6 +78,8 @@ export async function MissingResults({ q }: { q: string }) {
                 <PersonActions
                   id={p.id}
                   status={p.status}
+                  canEditDirectly={p.canEditDirectly}
+                  isAdmin={viewer.isAdmin}
                   values={{
                     name: p.name,
                     age: p.age,

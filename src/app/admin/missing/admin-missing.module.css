@@ -1,0 +1,62 @@
+.section {
+  margin-top: 2rem;
+}
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+}
+.diff {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.8rem;
+  font-size: 0.88rem;
+}
+.diff th,
+.diff td {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid var(--card-line);
+  vertical-align: top;
+}
+.from {
+  color: #9b1c1c;
+  text-decoration: line-through;
+}
+.to {
+  color: #146c43;
+  font-weight: 600;
+}
+.warn {
+  margin-top: 0.7rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: #fff4d6;
+  color: #7a5200;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.review {
+  margin-top: 0.9rem;
+}
+.timeline {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0 0 0 0.9rem;
+  border-left: 2px solid var(--card-line);
+  display: grid;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+.event strong {
+  text-transform: capitalize;
+}
+.changes {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}

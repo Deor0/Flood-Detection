@@ -1,0 +1,72 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e3e4f2;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+.wrap {
+  overflow-x: auto;
+}
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #eeeef6;
+  vertical-align: top;
+}
+.table th {
+  color: #5d6178;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #eeeef6;
+}
+.badgeAdmin {
+  background: #14172b;
+  color: #fff;
+}
+.badgeBad {
+  background: #fde8e8;
+  color: #8a1c1c;
+}
+.actions {
+  display: grid;
+  gap: 0.4rem;
+}
+.confirm summary {
+  cursor: pointer;
+  color: #4338ca;
+  font-size: 0.8rem;
+}
+.confirm form {
+  margin-top: 0.4rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.confirmText {
+  font-size: 0.78rem;
+  color: #8a1c1c;
+}
+.pager {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  align-items: center;
+}
+.pager a {
+  color: #4338ca;
+}
+.sub {
+  font-weight: 400;
+  color: #5d6178;
+}

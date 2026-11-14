@@ -65,7 +65,19 @@ export const missingPersonEvents = pgTable(
     missingPersonId: uuid('missing_person_id')
       .notNull()
       .references(() => missingPersons.id),
-    kind: text('kind', { enum: ['reported', 'edited', 'found'] }).notNull(),
+    kind: text('kind', {
+      enum: [
+        'reported',
+        'edited',
+        'found',
+        'reopened',
+        'edit_requested',
+        'edit_approved',
+        'edit_rejected',
+      ],
+    }).notNull(),
+    /** Why (required for re-open and rejections). */
+    reason: text('reason'),
     actorUserId: text('actor_user_id'),
     actorPhone: text('actor_phone'),
     /** For edits: { field: { from, to } }. For found: { note }. */
@@ -95,6 +107,9 @@ export const PROGRAM_CATEGORIES = [
 ] as const;
 export type ProgramCategory = (typeof PROGRAM_CATEGORIES)[number];
 
+export const PROGRAM_STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+export type ProgramStatus = (typeof PROGRAM_STATUSES)[number];
+
 /** Community awareness programs (drills, workshops, briefings). */
 export const programs = pgTable(
   'programs',
@@ -110,9 +125,18 @@ export const programs = pgTable(
     /** null = open access, no limit. */
     capacity: integer('capacity'),
     createdByUserId: text('created_by_user_id').notNull(),
+    /** New programs wait as 'pending' until an admin approves them. */
+    status: text('status', { enum: PROGRAM_STATUSES }).notNull().default('pending'),
+    reviewedByUserId: text('reviewed_by_user_id'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    rejectionReason: text('rejection_reason'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('programs_starts_at_idx').on(t.startsAt)],
+  (t) => [
+    index('programs_starts_at_idx').on(t.startsAt),
+    index('programs_status_idx').on(t.status),
+  ],
 );
 
 /** A registration is cancelled by setting cancelled_at, never by deleting the row. */
@@ -128,4 +152,51 @@ export const programRegistrations = pgTable(
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
   },
   (t) => [unique('program_registrations_user_program').on(t.programId, t.userId)],
+);
+
+/** Append-only history of a program: submitted, approved, rejected, edited, cancelled. */
+export const programEvents = pgTable(
+  'program_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    programId: uuid('program_id')
+      .notNull()
+      .references(() => programs.id),
+    kind: text('kind', {
+      enum: ['submitted', 'approved', 'rejected', 'edited', 'cancelled'],
+    }).notNull(),
+    actorUserId: text('actor_user_id').notNull(),
+    reason: text('reason'),
+    /** For edits: { field: { from, to } }. */
+    changes: jsonb('changes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('program_events_program_idx').on(t.programId)],
+);
+
+/** A suggested change to a missing-person record. The record is untouched until an admin approves. */
+export const missingPersonEditRequests = pgTable(
+  'missing_person_edit_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    missingPersonId: uuid('missing_person_id')
+      .notNull()
+      .references(() => missingPersons.id),
+    submittedByUserId: text('submitted_by_user_id').notNull(),
+    /** The record's updated_at when the suggestion was made, to spot changes made since. */
+    baseUpdatedAt: timestamp('base_updated_at', { withTimezone: true }).notNull(),
+    /** The proposed values: { name, age, lastSeenLocation, notes, contact }. */
+    proposed: jsonb('proposed').notNull(),
+    status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+      .notNull()
+      .default('pending'),
+    reviewedByUserId: text('reviewed_by_user_id'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    rejectReason: text('reject_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('edit_requests_person_idx').on(t.missingPersonId),
+    index('edit_requests_status_idx').on(t.status),
+  ],
 );

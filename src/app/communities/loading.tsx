@@ -9,8 +9,8 @@ export default function Loading() {
         <div>
           <h1 className={styles.title}>Community Awareness Programs</h1>
           <p className={styles.lede}>
-            Verified local disaster preparedness drills, first-aid workshops, flood safety sessions,
-            and emergency volunteer briefings happening nearby.
+            Disaster preparedness drills, first-aid workshops, flood safety sessions, and emergency
+            volunteer briefings reviewed by our team.
           </p>
         </div>
       </div>
