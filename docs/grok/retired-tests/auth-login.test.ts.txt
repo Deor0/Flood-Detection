@@ -1,0 +1,41 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it } from 'vitest';
+import LoginPage from '@/app/(auth)/login/page';
+import { loginHref } from '@/lib/auth-links';
+
+/** A return path may be used in /auth/login?returnTo. Anything else falls back to /dashboard. */
+const SAFE_RETURN = /^\/(?!\/)(?!.*\.\.)[A-Za-z0-9/_\-.]*$/;
+
+describe('loginHref', () => {
+  it('sends a successful login to /dashboard', () => {
+    expect(loginHref()).toBe(`/auth/login?returnTo=${encodeURIComponent('/dashboard')}`);
+  });
+
+  it('keeps a safe in-app return path', () => {
+    expect(SAFE_RETURN.test('/missing')).toBe(true);
+    expect(loginHref('/missing')).toBe(`/auth/login?returnTo=${encodeURIComponent('/missing')}`);
+  });
+
+  it.each([
+    'https://evil.example/dashboard',
+    '//evil.example',
+    '/foo/../bar',
+    '/foo?next=/dashboard',
+    '/dash board',
+    'dashboard',
+    '',
+  ])('falls back to /dashboard for unsafe returnTo %j', (returnTo) => {
+    expect(SAFE_RETURN.test(returnTo)).toBe(false);
+    expect(loginHref(returnTo)).toBe(loginHref());
+  });
+});
+
+describe('login page', () => {
+  it('links to Auth0 login and returns to the dashboard', () => {
+    const html = renderToStaticMarkup(createElement(LoginPage));
+
+    expect(html).toContain(`href="${loginHref()}"`);
+    expect(html).toContain('Log in with Auth0');
+  });
+});

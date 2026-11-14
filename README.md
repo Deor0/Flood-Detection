@@ -1,6 +1,6 @@
 # Flood Response
 
-Next.js (App Router) + TypeScript, Postgres + Drizzle, Auth0, Twilio/Textbelt SMS, Leaflet map.
+Next.js (App Router) + TypeScript, Postgres + Drizzle, own phone + password auth, Twilio/Textbelt SMS, Leaflet map.
 
 ## Setup
 
@@ -8,17 +8,17 @@ Requires Node >= 20 and pnpm.
 
 ```bash
 pnpm install
-cp .env.example .env   # then fill in values (a dummy .env is already included)
+cp .env.example .env   # then fill in values
 ```
 
 `DATABASE_URL` points at a Postgres instance.
 
-### Auth0
+### Auth
 
-Create a _Regular Web Application_ in Auth0, then set `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`
-and `AUTH0_SECRET` (`openssl rand -hex 32`). In the Auth0 app settings add
-`http://localhost:3000/auth/callback` to Allowed Callback URLs and `http://localhost:3000` to Allowed Logout URLs.
-Login lives at `/auth/login`, logout at `/auth/logout`.
+Clerk. Create or pick a Clerk application and run `npx -y clerk@latest init --app <application_id>`
+(or `clerk env pull`) to write `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` into `.env`.
+Sign-in is `/sign-in`, sign-up is `/sign-up`. Sign-in methods (email, phone, ...) are configured in the
+Clerk dashboard.
 
 ## Database
 

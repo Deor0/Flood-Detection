@@ -7,5 +7,6 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   prettier,
+  { files: ['tests/**'], rules: { 'react/no-children-prop': 'off' } },
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'src/db/migrations/**']),
 ]);

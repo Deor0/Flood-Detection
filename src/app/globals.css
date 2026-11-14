@@ -1,0 +1,45 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f9f7ff;
+  color: #14172b;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+/* Profile / sign-out menu (Clerk's UserButton), top right on every signed-in page. */
+.app-user {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 10;
+}
+
+/* Centered frame around Clerk's sign-in and sign-up cards. */
+.auth-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  background: #f9f7ff;
+}
+
+.auth-wordmark {
+  margin: 0 0 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: #5d6178;
+}

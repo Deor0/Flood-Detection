@@ -1,0 +1,92 @@
+'use client';
+
+import type { ReactNode } from 'react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
+import styles from './auth.module.css';
+
+export type Status = 'idle' | 'loading' | 'success' | 'error';
+
+/** Form-level message (wrong password, rate limit, network error). */
+export function FormError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className={styles.banner}>
+      {message}
+    </p>
+  );
+}
+
+export function Field({
+  label,
+  icon: Icon,
+  error,
+  trailing,
+  labelAside,
+  children,
+  htmlFor,
+  errorId,
+}: {
+  label: string;
+  icon?: LucideIcon;
+  error?: string;
+  trailing?: ReactNode;
+  labelAside?: ReactNode;
+  children: ReactNode;
+  htmlFor: string;
+  errorId: string;
+}) {
+  return (
+    <div className={styles.field}>
+      <div className={styles.labelRow}>
+        <label htmlFor={htmlFor} className={styles.label}>
+          {label}
+        </label>
+        {labelAside}
+      </div>
+      <div className={`${styles.inputWrap} ${error ? styles.inputInvalid : ''}`}>
+        {Icon && <Icon className={styles.inputIcon} size={16} aria-hidden="true" />}
+        {children}
+        {trailing}
+      </div>
+      {error && (
+        <p id={errorId} role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function PasswordToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className={styles.iconButton}
+      onClick={onToggle}
+      aria-label={shown ? 'Hide password' : 'Show password'}
+      aria-pressed={shown}
+    >
+      {shown ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+    </button>
+  );
+}
+
+export function SubmitButton({
+  status,
+  children,
+  busyLabel = 'WORKING…',
+}: {
+  status: Status;
+  children: ReactNode;
+  busyLabel?: string;
+}) {
+  const busy = status === 'loading' || status === 'success';
+  return (
+    <button type="submit" className={styles.primary} disabled={busy} aria-busy={busy}>
+      {status === 'loading' && <Loader2 size={16} className={styles.spin} aria-hidden="true" />}
+      {status === 'success' && <CheckCircle2 size={16} aria-hidden="true" />}
+      <span>{busy ? busyLabel : children}</span>
+      {!busy && <ArrowRight size={16} aria-hidden="true" />}
+    </button>
+  );
+}

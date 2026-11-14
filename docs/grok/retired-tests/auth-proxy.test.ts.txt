@@ -1,0 +1,84 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NextRequest, NextResponse } from 'next/server';
+
+const { middleware, getSession } = vi.hoisted(() => ({
+  middleware: vi.fn(),
+  getSession: vi.fn(),
+}));
+
+vi.mock('@/lib/auth0', () => ({
+  auth0: {
+    middleware,
+    getSession,
+  },
+}));
+
+import { proxy } from '@/proxy';
+
+const LOGIN_REDIRECT = 'http://localhost:3000/login';
+
+function incoming(path: string) {
+  return new NextRequest(new URL(path, 'http://localhost:3000'));
+}
+
+function redirectsToLogin(response: Response) {
+  return response.status === 307 && response.headers.get('location') === LOGIN_REDIRECT;
+}
+
+beforeEach(() => {
+  middleware.mockReset();
+  getSession.mockReset();
+  middleware.mockResolvedValue(NextResponse.next());
+  getSession.mockResolvedValue(null);
+});
+
+describe('login and logout session gate', () => {
+  it('leaves the login page reachable when there is no session', async () => {
+    const response = await proxy(incoming('/login'));
+
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(redirectsToLogin(response)).toBe(false);
+  });
+
+  it('lets /auth/login reach Auth0 middleware when there is no session', async () => {
+    const response = await proxy(incoming('/auth/login?returnTo=%2Fdashboard'));
+
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(getSession).not.toHaveBeenCalled();
+    expect(redirectsToLogin(response)).toBe(false);
+  });
+
+  it('lets /auth/callback reach Auth0 middleware when there is no session', async () => {
+    const response = await proxy(incoming('/auth/callback'));
+
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(getSession).not.toHaveBeenCalled();
+    expect(redirectsToLogin(response)).toBe(false);
+  });
+
+  it('lets /auth/logout reach Auth0 middleware and does not send the browser to /login', async () => {
+    getSession.mockResolvedValue({ user: { sub: 'auth0|abc', email: 'a@example.com' } });
+    const response = await proxy(
+      incoming('/auth/logout?returnTo=http%3A%2F%2Flocalhost%3A3000%2Flogin'),
+    );
+
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(getSession).not.toHaveBeenCalled();
+    expect(redirectsToLogin(response)).toBe(false);
+  });
+
+  it('redirects a signed-out visitor from /dashboard to /login', async () => {
+    const response = await proxy(incoming('/dashboard'));
+
+    expect(middleware).toHaveBeenCalledOnce();
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(LOGIN_REDIRECT);
+  });
+
+  it('does not redirect a signed-in visitor from /dashboard to /login', async () => {
+    getSession.mockResolvedValue({ user: { sub: 'auth0|abc', email: 'a@example.com' } });
+    const response = await proxy(incoming('/dashboard'));
+
+    expect(redirectsToLogin(response)).toBe(false);
+  });
+});

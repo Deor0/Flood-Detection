@@ -1,0 +1,54 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { afterEach, describe, expect, it } from 'vitest';
+import RootLayout from '@/app/layout';
+import { logoutHref } from '@/lib/auth-links';
+
+const previousBaseUrl = process.env.APP_BASE_URL;
+
+afterEach(() => {
+  if (previousBaseUrl === undefined) delete process.env.APP_BASE_URL;
+  else process.env.APP_BASE_URL = previousBaseUrl;
+});
+
+describe('logoutHref', () => {
+  it('sends Auth0 an absolute logout URL on the app origin', () => {
+    expect(logoutHref('http://localhost:3000')).toBe(
+      `/auth/logout?returnTo=${encodeURIComponent('http://localhost:3000/login')}`,
+    );
+    expect(logoutHref('http://localhost:3000/')).toBe(logoutHref('http://localhost:3000'));
+    expect(logoutHref('http://localhost:3000/ignored')).toBe(logoutHref('http://localhost:3000'));
+  });
+
+  it('keeps a safe in-app path on that origin', () => {
+    expect(logoutHref('https://flood.example', '/missing')).toBe(
+      `/auth/logout?returnTo=${encodeURIComponent('https://flood.example/missing')}`,
+    );
+  });
+
+  it.each(['https://evil.example/phish', '//evil.example', '/foo/../bar'])(
+    'falls back to /login for unsafe return path %j',
+    (returnToPath) => {
+      expect(logoutHref('http://localhost:3000', returnToPath)).toBe(
+        logoutHref('http://localhost:3000'),
+      );
+    },
+  );
+
+  it.each(['not a url', '', 'javascript:alert(1)'])(
+    'rejects an app base URL that is not http(s): %j',
+    (appBaseUrl) => {
+      expect(() => logoutHref(appBaseUrl)).toThrow(Error);
+    },
+  );
+});
+
+describe('logout link', () => {
+  it('renders a logout anchor from APP_BASE_URL in the root layout', async () => {
+    process.env.APP_BASE_URL = 'https://flood.example';
+    const node = await RootLayout({ children: 'child' });
+    const html = renderToStaticMarkup(node);
+
+    expect(html).toContain(`href="${logoutHref('https://flood.example')}"`);
+    expect(html).toContain('Log out');
+  });
+});
