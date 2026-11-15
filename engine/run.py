@@ -41,6 +41,24 @@ class EngineTimeout(RuntimeError):
     pass
 
 
+def omp_threads() -> int:
+    """SFINCS threads: OMP_NUM_THREADS if set, else the container's CPU quota (not the host's cores).
+
+    On shared hosts the container sees every host core but may only use a fraction of them; one
+    thread per host core then makes the run many times slower.
+    """
+    if os.environ.get("OMP_NUM_THREADS", "").isdigit():
+        return max(1, int(os.environ["OMP_NUM_THREADS"]))
+    try:
+        with open("/sys/fs/cgroup/cpu.max") as f:
+            quota, period = f.read().split()[:2]
+        if quota != "max":
+            return max(1, min(8, int(int(quota) / int(period))))
+    except (OSError, ValueError):
+        pass
+    return max(1, min(4, os.cpu_count() or 1))
+
+
 def run_dir(key: str) -> str:
     return os.path.join(RUNS_DIR, key)
 
@@ -128,6 +146,7 @@ def simulate(req: SimulateRequest) -> dict:
             capture_output=True,
             text=True,
             timeout=TIMEOUT_S,
+            env={**os.environ, "OMP_NUM_THREADS": str(omp_threads())},
         )
     except subprocess.TimeoutExpired as exc:
         raise EngineTimeout("timeout") from exc
