@@ -6,6 +6,15 @@
   font-family: var(--font-sans);
 }
 
+.kicker {
+  margin: 0 0 0.25rem;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .title {
   margin: 0;
   font-size: clamp(1.7rem, 4vw, 2.3rem);
@@ -32,6 +41,31 @@
   line-height: 1.5;
 }
 
+.dangerLine {
+  margin: 0;
+  font-weight: 700;
+}
+
+.callList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.call {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.offline {
+  margin-top: 0.75rem;
+}
+
 .phases {
   display: grid;
   gap: 1rem;
@@ -54,6 +88,19 @@
   margin: 0;
   font-size: 1.3rem;
   font-weight: 800;
+}
+
+.urgent {
+  border-top-color: var(--danger);
+}
+
+.phaseTheme {
+  margin: 0.1rem 0 0;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .phaseLead {
@@ -325,5 +372,50 @@
 
   .appGrid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Circe's card: printing the guide gives one page with the emergency numbers and the During steps. */
+@media print {
+  :global(body):has(.page) > :not(main) {
+    display: none;
+  }
+
+  .page {
+    max-width: none;
+    padding: 0;
+    font-size: 10.5pt;
+  }
+
+  .page > :not(.kicker, .title, .danger, .phases) {
+    display: none;
+  }
+
+  .phases {
+    display: block;
+    margin-top: 0.5rem;
+  }
+
+  .phase:not(.urgent) {
+    display: none;
+  }
+
+  .phase {
+    border: 1px solid #000;
+    break-inside: avoid;
+  }
+
+  .tip {
+    padding: 0.25rem 0;
+  }
+
+  .cite {
+    display: none;
+  }
+
+  .danger,
+  .call {
+    color: #000;
+    background: none;
   }
 }
