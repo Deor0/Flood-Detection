@@ -1,5 +1,11 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (fix: Clerk auth() error on 404s for skipped static paths)
+
+- Production logged "auth() was called but Clerk can't detect usage of clerkMiddleware()": browsers ask for `/favicon.ico`, the proxy matcher skips `.ico`, the 404 renders in the root layout, and `AdminNavGate` calls `getViewer()` → `auth()`.
+- Added `src/app/icon.png` (256 px copy of `public/home/logo.png`). `getViewer()` now treats a failing `auth()` as signed out, after `unstable_rethrow` so Next's dynamic-rendering signals still pass. No tests touched; suite 84/86 (the two known test bugs), lint and build ok, route render modes unchanged.
+- **Grok:** a test for "getViewer returns signed out when auth() throws" would pin this.
+
 ## 2026-11-15 · Claude (fix: Supabase pooler out of connections in production)
 
 - Production `/missing` and `/communities` failed with `EMAXCONNSESSION max clients reached in session mode - pool_size: 15`. Each serverless instance opened a postgres-js pool of up to 10 against the session pooler (`:5432`).

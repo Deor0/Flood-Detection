@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { notFound } from 'next/navigation';
+import { notFound, unstable_rethrow } from 'next/navigation';
 
 /**
  * Admin = Clerk `publicMetadata.role === 'admin'`. publicMetadata can only be written from the
@@ -19,7 +19,17 @@ export function isAdminClaims(claims: RoleClaims): boolean {
  * carry it; otherwise falls back to one Clerk Backend lookup (cached per request).
  */
 export const getViewer = cache(async (): Promise<Viewer> => {
-  const { userId, sessionClaims } = await auth();
+  let session: Awaited<ReturnType<typeof auth>>;
+  try {
+    session = await auth();
+  } catch (err) {
+    unstable_rethrow(err); // let Next's own signals (dynamic rendering, redirects) through
+    // Requests the proxy skips (e.g. a missing static file rendering the 404 page inside the root
+    // layout) have no Clerk context and auth() throws. Treat them as signed out.
+    console.warn('auth() unavailable, treating as signed out', (err as Error).message);
+    return { userId: null, isAdmin: false };
+  }
+  const { userId, sessionClaims } = session;
   if (!userId) return { userId: null, isAdmin: false };
   if (isAdminClaims(sessionClaims as RoleClaims)) return { userId, isAdmin: true };
   if (
