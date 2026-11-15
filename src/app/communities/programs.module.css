@@ -88,6 +88,53 @@
   margin: 0.3rem 0 0;
 }
 
+.loadError {
+  margin: 0 0 1.5rem;
+  color: var(--danger-ink);
+  font-size: 0.9rem;
+}
+
+.notice {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-control);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.kicker {
+  margin: 0 0 0.25rem;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.full {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--warn-ink);
+}
+
 .approved::before {
   content: '✓ ';
 }
