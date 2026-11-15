@@ -18,7 +18,7 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();
 
 /** Records are never deleted: a person moves from 'missing' to 'found', and edits are logged. */
 export const missingPersons = pgTable(
@@ -56,7 +56,7 @@ export const missingPersons = pgTable(
     index('missing_persons_name_idx').on(t.nameNormalized),
     index('missing_persons_status_idx').on(t.status),
   ],
-);
+).enableRLS();
 
 /** Append-only history of a missing-person record. Never updated or deleted. */
 export const missingPersonEvents = pgTable(
@@ -86,7 +86,7 @@ export const missingPersonEvents = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('missing_person_events_person_idx').on(t.missingPersonId)],
-);
+).enableRLS();
 
 /** Append-only: never update or delete rows. */
 export const smsLog = pgTable('sms_log', {
@@ -97,7 +97,7 @@ export const smsLog = pgTable('sms_log', {
   parsedJson: jsonb('parsed_json'),
   reply: text('reply').notNull(),
   receivedAt: timestamp('received_at', { withTimezone: true }).notNull(),
-});
+}).enableRLS();
 
 export const PROGRAM_CATEGORIES = [
   'first_aid_cpr',
@@ -138,7 +138,7 @@ export const programs = pgTable(
     index('programs_starts_at_idx').on(t.startsAt),
     index('programs_status_idx').on(t.status),
   ],
-);
+).enableRLS();
 
 /** A registration is cancelled by setting cancelled_at, never by deleting the row. */
 export const programRegistrations = pgTable(
@@ -153,7 +153,7 @@ export const programRegistrations = pgTable(
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
   },
   (t) => [unique('program_registrations_user_program').on(t.programId, t.userId)],
-);
+).enableRLS();
 
 /** Append-only history of a program: submitted, approved, rejected, edited, cancelled. */
 export const programEvents = pgTable(
@@ -173,7 +173,7 @@ export const programEvents = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('program_events_program_idx').on(t.programId)],
-);
+).enableRLS();
 
 /** A suggested change to a missing-person record. The record is untouched until an admin approves. */
 export const missingPersonEditRequests = pgTable(
@@ -200,7 +200,7 @@ export const missingPersonEditRequests = pgTable(
     index('edit_requests_person_idx').on(t.missingPersonId),
     index('edit_requests_status_idx').on(t.status),
   ],
-);
+).enableRLS();
 
 /** A flood alert. v1 alerts are simulations; nothing is ever sent. Never deleted. */
 export const floodAlerts = pgTable('flood_alerts',
@@ -224,7 +224,7 @@ export const floodAlerts = pgTable('flood_alerts',
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('flood_alerts_status_idx').on(t.status)],
-);
+).enableRLS();
 
 /** Append-only history of an alert. */
 export const floodAlertEvents = pgTable('flood_alert_events',
@@ -241,7 +241,7 @@ export const floodAlertEvents = pgTable('flood_alert_events',
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('flood_alert_events_alert_idx').on(t.alertId)],
-);
+).enableRLS();
 
 /**
  * Per river-cell climatology cache: the yearly flood maxima from the 1984-to-now history, which
@@ -264,4 +264,4 @@ export const floodClimatology = pgTable('flood_climatology', {
   historyEnd: text('history_end').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}).enableRLS();

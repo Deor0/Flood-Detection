@@ -29,6 +29,20 @@
       "when": 1794709305459,
       "tag": "0003_mean_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794729465462,
+      "tag": "0004_enable_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794729469005,
+      "tag": "0005_revoke_data_api_roles",
+      "breakpoints": true
     }
   ]
 }
