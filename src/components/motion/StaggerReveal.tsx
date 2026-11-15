@@ -23,18 +23,24 @@ const START = 'top 85%';
  */
 export function StaggerReveal({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
+  // Decided once, on the very first run. React may run this effect again (Strict Mode in dev,
+  // Fast Refresh), and by then the items are visible because the previous run was reverted.
+  const failsafeFired = useRef<boolean | null>(null);
 
   useGSAP(
     () => {
       const el = root.current;
       if (!el) return;
 
-      // Slow load: the CSS failsafe already showed everything. Hiding it again would blink.
-      const first = el.querySelector<HTMLElement>('[data-reveal]');
-      if (first && getComputedStyle(first).opacity !== '0') {
-        el.classList.remove(styles.pending);
-        return;
+      if (failsafeFired.current === null) {
+        // Slow load: the CSS failsafe already showed the items before this script arrived.
+        const first = el.querySelector<HTMLElement>('[data-reveal]');
+        failsafeFired.current =
+          el.classList.contains(styles.pending) &&
+          !!first &&
+          getComputedStyle(first).opacity !== '0';
       }
+      const keepVisibleOnScreen = failsafeFired.current;
 
       const mm = gsap.matchMedia();
 
@@ -51,6 +57,9 @@ export function StaggerReveal({ children }: { children: ReactNode }) {
           if (rect.bottom <= 0) return;
           const length = DURATION + STAGGER * (items.length - 1);
           const onScreen = index === 0 || rect.top < fold;
+          // Already shown by the failsafe and in view: hiding it again would blink. Groups further
+          // down are off screen, so they can still play when scrolled to.
+          if (onScreen && keepVisibleOnScreen) return;
           const delay = onScreen ? queued : 0;
           if (onScreen) queued += length * 0.6;
 
