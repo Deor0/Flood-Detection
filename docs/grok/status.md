@@ -21,6 +21,15 @@ One-time test exception (user): Claude wrote new tests for the backend it change
 - Tests: `tests/sms-parse.test.ts`, `sms-core.test.ts`, `sms-allowed.test.ts`, `vapi-tools.test.ts`, `call-intent.test.ts`. Full run 188/190 (the two known reds: `admin-edits`, `api-flood`). tsc clean, lint 0 errors, build ok.
 - **Open:** the Nav still hides the helpline tab from signed-out visitors (Nav is outside this area).
 
+## 2026-11-15 · Claude (judge feedback: Flood Guide and Nepal accuracy, branch `judge/guide-nepal`)
+
+Approved one-time test exception: new tests only (`tests/guide-content.test.ts`, `tests/nepal-impact.test.ts`); no existing test changed.
+
+- `/nepal`: cause now matches Copernicus EMS EMSR927 ("flash flood reportedly triggered by a Glacial Lake Outburst Flood"), with the International Charter (activation 1052) note that the exact cause is under investigation. The unconfirmed ">1,400" toll and the vehicle statistic are gone. 7,600 people and 4,685 buildings are EMSR927 *affected* estimates (they are the sums of the per-area affected counts), so the labels say "affected", not "in the mapped area". Timeline only uses dates found in EMSR927, the Charter and GDACS. The unverified "barrier lake overflow 28 Aug" and "search and rescue ended 5 Oct" entries were removed from `replay.json`.
+- What-if (`src/app/nepal-impact-model.ts`): per-area warning time (upstream Timure/Syapru Besi to downstream Bidur/Phosretar) scales the estimate. Shares are labelled assumptions.
+- `/guide`: During comes first and includes being trapped (NWS, Ready.gov), tel: 911 / Nepal Police 100 / "your local emergency number". A sourced "Mountain floods: GLOF and debris flows" section links to and from /nepal. Citations fixed (Ready.gov for kit water, evacuation routes, electricity; NWS "drownings"). The car tip now follows Ready.gov ("stay inside if trapped in fast water; roof if water rises inside"). There's a print stylesheet for a one-page During card. Odyssey subtitles added.
+- **For other owners:** `src/app/page.tsx` (~69-70, ~229) still says "people/buildings in the mapped area" and "A debris flow struck". `src/app/dashboard/ReplayPanel.tsx:39` still says "rock-and-ice slope failure". `Disclaimers.tsx:22` is fine.
+
 ## 2026-11-15 · Claude (Offline Helpline UI: SMS + voice, frontend only)
 
 The user asked for UI and UX changes only, with no backend changes and no tests. This is approved UI-only work: no test was written or edited, and nothing in `src/app/api`, `src/core`, `src/db`, `src/sms` or `src/proxy.ts` changed.
