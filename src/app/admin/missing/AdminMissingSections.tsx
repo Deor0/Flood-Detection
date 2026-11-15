@@ -19,6 +19,8 @@ const FIELD_LABELS: Record<string, string> = {
   lastSeenLocation: 'Last seen',
   notes: 'Notes',
   contact: 'Contact',
+  status: 'Status (reported safe)',
+  foundNote: 'Found note',
 };
 const show = (v: unknown) => (v === null || v === undefined || v === '' ? '(empty)' : String(v));
 

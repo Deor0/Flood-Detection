@@ -3,7 +3,7 @@ import NepalImpact from '../NepalImpact';
 import styles from './nepal.module.css';
 
 export const metadata = {
-  title: 'Nepal, 26 August 2026 (The Telling) | Flood Response',
+  title: 'Nepal, 26 August 2026 (The Telling)',
   description:
     'A sourced look at the Rasuwa flash flood of 26 August 2026, reportedly triggered by a glacial lake outburst: what happened, what a warning could have changed, and the limits of river models.',
 };

@@ -70,8 +70,8 @@ const FEATURES: {
 ];
 
 const NEPAL = [
-  { value: 'about 7,600', label: 'people in the mapped area' },
-  { value: '4,685', label: 'buildings in the mapped area' },
+  { value: 'about 7,600', label: 'people affected in the mapped areas' },
+  { value: '4,685', label: 'buildings affected in the mapped areas' },
   { value: '26 Aug 2026', label: 'day it happened' },
 ] as const;
 
@@ -258,8 +258,8 @@ export default function Home() {
               ))}
             </ul>
             <p className={styles.nepalText} data-reveal>
-              A debris flow struck the Bhote Koshi and Trishuli valleys. Figures are from Copernicus
-              EMS EMSR927, as of 5 Oct 2026.
+              A flash flood, reportedly triggered by a glacial lake outburst, surged down the Bhote
+              Koshi and Trishuli valleys. Figures are Copernicus EMS EMSR927 estimates.
             </p>
             <Link href="/nepal" className={styles.onDark} data-reveal>
               See what happened and what could have helped

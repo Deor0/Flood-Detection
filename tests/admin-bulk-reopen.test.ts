@@ -11,12 +11,20 @@ const ids: Record<string, string> = {};
 
 beforeAll(async () => {
   ctx = await createTestDb();
-  for (const name of ['Ana Rai', 'Bikash Thapa', 'Chandra Gurung', 'Dipa Lama']) {
-    const r = await reportMissing(ctx.db, admin, { name });
+  // Each record is filed by the account that later marks it found: since non-reporters only file
+  // a claim, a direct "found" comes from the reporter (here a troll account) or an admin.
+  const reporters: Record<string, { userId: string } | { phone: string }> = {
+    'Ana Rai': { userId: 'user_troll' },
+    'Bikash Thapa': { userId: 'user_troll' },
+    'Chandra Gurung': { phone: '+15555550199' },
+    'Dipa Lama': { userId: 'user_helper' },
+  };
+  for (const [name, reporter] of Object.entries(reporters)) {
+    const r = await reportMissing(ctx.db, reporter, { name });
     if (!r.ok) throw new Error('seed failed');
     ids[name] = r.person.id;
   }
-  // A troll marks three people found; an honest helper marks one.
+  // A troll marks two people found; a phone and an honest helper mark one each.
   await markFound(ctx.db, { userId: 'user_troll' }, ids['Ana Rai'], 'fake');
   await markFound(ctx.db, { userId: 'user_troll' }, ids['Bikash Thapa'], 'fake');
   await markFound(ctx.db, { phone: '+15555550199' }, ids['Chandra Gurung'], 'sms');

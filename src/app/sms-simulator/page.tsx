@@ -21,7 +21,7 @@ const DESCRIPTION =
   'Search for someone, report a missing person, or mark them found by phone call or text message, with no internet. Practise both here first.';
 
 export const metadata: Metadata = {
-  title: `${HELPLINE_NAME} · ${HELPLINE_KICKER} · Poseidon Surge`,
+  title: `${HELPLINE_NAME} · ${HELPLINE_KICKER}`,
   description: DESCRIPTION,
   openGraph: {
     title: `${HELPLINE_NAME} (${HELPLINE_KICKER}): call or text when the internet is down`,

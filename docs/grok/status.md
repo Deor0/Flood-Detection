@@ -1,5 +1,30 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (judging pass: 7 judge branches merged into `plan`)
+
+The user ran a 7-judge review (Robustness, Theme = Homer's Odyssey, Creativity, scored 1–10 per tab). Starting averages were 5.6 / 1.3 / 5.3. Each judge's non-security fixes were built on its own branch and merged into `plan`: `judge/home`, `judge/flood-desk`, `judge/missing`, `judge/communities`, `judge/helpline`, `judge/guide-nepal`, `judge/admin`. **Approved one-time test exception:** the builders wrote their own new tests. Security hardening was skipped at the user's request; the two exceptions are the `/missing` privacy fix and the two-step "found". No migrations; only TS enum values were added (program categories, `found_claimed`).
+
+- **Tests:** 277/277 green. Both long-standing reds are fixed: `api-flood` now mocks GEOGloWS by URL, and `admin-edits` gives the test its own reporters. `tsc` is clean, lint has 0 errors, `next build` passes.
+- **Entries:** missing, helpline and guide-nepal logged their own entries below. Home, flood-desk, communities and admin are summarised here:
+  - **Home:** "Poseidon Surge" title template and brand; Ithaca kicker; the hero animates in CSS only (never hidden waiting for JS); reunion counter (`src/core/missing/stats.ts`); auth copy without the fake security badges; email-code step in `SignUpForm`; `redirect_url` kept when switching between sign-in and sign-up; Nav "Offline Helpline"; OG image; `hero.webp` (80 KB) and a 29 KB logo. `tests/clerk-sign-in.test.ts` brand assertion updated.
+  - **Flood desk:** `/api/flood` and `/api/dem` no longer require sign-in. Depth is stage(Q) − stage(normal flow). In-flight dedupe, concurrency 3, shorter timeouts, `maxDuration = 60`. Today/forecast severity split. "No river" cached for 7 days. Daily min/max forecast band. "Way home" to the nearest high ground (Ithaca).
+  - **Communities:** Shelter/Supplies/Rides/Cleanup crew categories. Material host edits on approved programs go back to pending. My registrations. Host headcount. Past-start check (admins exempt). "The ship is full". Open Doors copy. Note for Grok: `program-manage` and `admin-permissions` tests create non-admin programs dated 2026-12-01/08, which will fail the past-start rule after those dates. Move them to far-future dates or inject `now`.
+  - **Admin:** Clerk calls moved out of DB transactions (`src/core/admin/roleChanges.ts`); banned admins excluded from the last-admin count. Activity feed shows names, masked phones and alert events, with filters. Oldest-first queues with wait labels, reject reason picker, users email search. Bulk re-open of false "found" marks (`src/core/admin/bulkReopen.ts`). Penelope's Loom / Helmsman's Log copy.
+- **Merge fixes (Claude):**
+  - `tests/admin-bulk-reopen.test.ts` seeds each record with the account that later marks it found, because non-reporters now only file a claim.
+  - `/opengraph-image(.*)` added to the public routes, and the gate test updated to match.
+  - Page titles no longer repeat the brand (find, nepal, helpline).
+  - The demo page says the live desk is public.
+  - Home and ReplayPanel Nepal wording matches the verified /nepal page (GLOF-triggered flash flood; "affected" estimates; dropped the unverified 5 Oct date).
+  - Nav shows the helpline tab to signed-out visitors.
+  - The admin queue labels found-claim fields.
+- **Still open (not done):**
+  - The security items the user deferred: webhook secrets, the simulator `from` field, rate limits, the role-change audit.
+  - Production admin role for the owner.
+  - The voice line number.
+  - Rebuilding the demo data so it includes `normalFlow`/`severities` (`scripts/build-demo.mjs`).
+  - Sign-up's email-code step hasn't been tried against production Clerk yet.
+
 ## 2026-11-15 · Claude (judge feedback: Missing People & Find, branch `judge/missing`)
 
 Approved one-time test exception: new tests in `tests/missing-judge.test.ts`; `tests/admin-edits.test.ts` "stops one user at 10 pending suggestions" now uses its own reporters (the shared reporter hit the 10-reports-a-day limit; test bug, now green).

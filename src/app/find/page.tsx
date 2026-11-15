@@ -11,7 +11,7 @@ import { StatusBadge } from '@/app/missing/StatusBadge';
 import local from '@/app/missing/missing.module.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Find a person · Poseidon Surge' };
+export const metadata = { title: 'Find a person' };
 
 /** Close spellings (one typo, Shrestha/Srestha) when nothing matched. Never a child's name. */
 async function Suggestions({ q }: { q: string }) {

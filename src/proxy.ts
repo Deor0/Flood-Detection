@@ -24,6 +24,7 @@ const isPublic = createRouteMatcher([
   '/geo/(.*)',
   '/demo(.*)',
   '/sms-simulator(.*)',
+  '/opengraph-image(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

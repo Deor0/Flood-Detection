@@ -61,6 +61,7 @@ describe('Clerk session gate', () => {
       '/geo/(.*)',
       '/demo(.*)',
       '/sms-simulator(.*)',
+      '/opengraph-image(.*)',
     ]);
 
     for (const path of [
@@ -81,6 +82,7 @@ describe('Clerk session gate', () => {
       '/geo/place.json',
       '/demo',
       '/sms-simulator',
+      '/opengraph-image',
     ]) {
       protect.mockClear();
       await proxy(incoming(path));

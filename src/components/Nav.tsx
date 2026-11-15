@@ -29,8 +29,7 @@ export function Nav({
   if (!signedIn && (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
     return null;
   }
-  const visible = signedIn ? TABS : TABS.filter((tab) => tab.href !== '/sms-simulator');
-  const tabs = isAdmin ? [...visible, { href: '/admin', label: 'Admin' }] : visible;
+  const tabs = isAdmin ? [...TABS, { href: '/admin', label: 'Admin' }] : TABS;
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>
