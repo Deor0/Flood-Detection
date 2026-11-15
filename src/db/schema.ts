@@ -1,4 +1,5 @@
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -241,3 +242,26 @@ export const floodAlertEvents = pgTable('flood_alert_events',
   },
   (t) => [index('flood_alert_events_alert_idx').on(t.alertId)],
 );
+
+/**
+ * Per river-cell climatology cache: the yearly flood maxima from the 1984-to-now history, which
+ * never changes day to day. Rows are never deleted; a stale row is refreshed in place. The flood
+ * route works without this table (it falls back to fetching the full history).
+ */
+export const floodClimatology = pgTable('flood_climatology', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** `${round(lat/0.05)}:${round(lng/0.05)}` for the clicked point (GloFAS cells are 0.05 degrees). */
+  cellKey: text('cell_key').notNull().unique(),
+  pickedLat: doublePrecision('picked_lat'),
+  pickedLng: doublePrecision('picked_lng'),
+  noRiver: boolean('no_river').notNull().default(false),
+  meanDischarge: doublePrecision('mean_discharge'),
+  neighbourEmptyCount: integer('neighbour_empty_count').notNull().default(0),
+  /** Hydrological-year maxima (number[]), current partial year already excluded. */
+  annualMaxima: jsonb('annual_maxima').notNull().default([]),
+  years: integer('years').notNull().default(0),
+  historyStart: text('history_start').notNull(),
+  historyEnd: text('history_end').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

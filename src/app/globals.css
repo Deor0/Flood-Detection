@@ -1,4 +1,4 @@
-/* Palette: Fog + Tide ink + Channel teal. Everything in the app reads these tokens. */
+/* Palette: Ocean Blue, Royal Blue and Cyan on a cool blue-white base. Everything in the app reads these tokens. */
 :root {
   --font-sans: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
@@ -7,30 +7,30 @@
   /* Corner radius of cards, panels, tables and menus. 0 = sharp edges. */
   --radius-card: 0;
 
-  /* Fog: page background. Tide ink: text and headings. */
-  --bg: #edf2f3;
-  --ink: #0d2b38;
-  --ink-soft: #3b5662; /* secondary text, a lighter step of the ink */
-  --muted: #7c95a0; /* decorative only: icons and dividers (too light for text) */
-  --placeholder: #4c6772; /* readable placeholder text (4.5:1) */
+  /* Near-white page background. Navy ink: text and headings. */
+  --bg: #f8fbfe;
+  --ink: #0b1f3a;
+  --ink-soft: #3a4f6b; /* secondary text, a lighter step of the ink */
+  --muted: #7f93ab; /* decorative only: icons and dividers (too light for text) */
+  --placeholder: #4d6178; /* readable placeholder text (4.5:1) */
 
-  /* surfaces derived from Fog */
+  /* surfaces: a near-white base with the faintest blue */
   --paper: #ffffff; /* raised cards and menus */
-  --surface: #e2eaec; /* inputs and record cards */
-  --surface-strong: #d3dee1; /* badges, active tab, icon tiles */
-  --hover: #e9f0f1;
-  --line: #ccd9dd;
-  --line-strong: #b3c4ca;
+  --surface: #f0f6fc; /* inputs and record cards */
+  --surface-strong: #e3edf8; /* badges, active tab, icon tiles */
+  --hover: #f3f8fd;
+  --line: #d9e5f1;
+  --line-strong: #c2d4e7;
 
-  /* Channel teal: the single action color (Search, Report, Mark as found, links, focus) */
-  --primary: #0e6f7e;
-  --primary-hover: #0a5663;
+  /* Royal blue: the single action colour (Search, Report, Mark as found, links, focus) */
+  --primary: #2b4fc7;
+  --primary-hover: #1f3da3;
   --on-primary: #ffffff;
-  --focus: #0e6f7e;
+  --focus: #2b4fc7;
 
-  /* Stage amber: warnings only, always a fill with dark text (Unaccounted / Missing, pending) */
-  --amber: #f2a900;
-  --on-amber: #0d2b38;
+  /* Amber (severity only): warnings only, always a fill with dark text (Unaccounted / Missing, pending) */
+  --amber: #19c3e8;
+  --on-amber: #0b1f3a;
   --warn-bg: var(--amber);
   --warn-ink: var(--on-amber);
   --warn-tint: #fbe9b4; /* large callouts */

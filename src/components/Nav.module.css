@@ -18,17 +18,8 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.24em;
-  color: var(--ink);
+  line-height: 0;
   text-decoration: none;
-  white-space: nowrap;
-}
-
-.brand:hover {
-  color: var(--primary);
 }
 
 .brand:focus-visible {
@@ -36,12 +27,10 @@
   outline-offset: 3px;
 }
 
-/* A tiny river-and-bank mark: three teal bands, deepest at the centre. */
-.mark {
-  display: inline-block;
-  width: 1.1rem;
-  height: 0.8rem;
-  background: linear-gradient(to bottom, #8fd0d8 0 33%, var(--primary) 33% 66%, #0a5663 66%);
+.logo {
+  display: block;
+  height: 2.75rem;
+  width: auto;
 }
 
 .tabs {
@@ -85,8 +74,8 @@
 }
 
 @media (max-width: 640px) {
-  .brand {
-    display: none;
+  .logo {
+    height: 2.25rem;
   }
   .tabs {
     justify-content: flex-start;

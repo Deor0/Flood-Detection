@@ -3,15 +3,15 @@
  * (hero is 16:10). Amber appears once per picture, as a tiny accent.
  */
 
-const INK = '#0d2b38';
-const FOG = '#edf2f3';
-const SURFACE = '#e2eaec';
-const LINE = '#b3c4ca';
-const TEAL = '#0e6f7e';
-const TEAL_DARK = '#0a3a47';
-const TEAL_MID = '#3fa5b3';
-const TEAL_LIGHT = '#8fd0d8';
-const AMBER = '#f2a900';
+const INK = '#0B1F3A';
+const FOG = '#EEF4FB';
+const SURFACE = '#DFEAF6';
+const LINE = '#AFC3DB';
+const TEAL = '#2B4FC7';
+const TEAL_DARK = '#0A3A63';
+const TEAL_MID = '#19C3E8';
+const TEAL_LIGHT = '#9BE7F5';
+const AMBER = '#19C3E8';
 const FONT = 'Roboto, system-ui, sans-serif';
 
 type ArtProps = { className?: string };
@@ -167,7 +167,7 @@ export function SmsArt({ className }: ArtProps) {
       {/* phone */}
       <rect x="120" y="14" width="160" height="276" fill={INK} />
       <rect x="130" y="34" width="140" height="236" fill="#ffffff" />
-      <rect x="176" y="20" width="48" height="6" fill="#3b5662" />
+      <rect x="176" y="20" width="48" height="6" fill="#3A4F6B" />
       {/* simulation banner */}
       <rect x="130" y="34" width="140" height="22" fill={TEAL_DARK} />
       <text

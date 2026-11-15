@@ -2,7 +2,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #0a3a47;
+  background: #0a3a63;
 }
 
 .picture {
@@ -35,13 +35,13 @@
 }
 
 /*
- * Deep-teal wash. White text sits on at least ~0.8 of #0a3a47, which keeps it above 4.5:1 over
+ * Deep-teal wash. White text sits on at least ~0.8 of #0A3A63, which keeps it above 4.5:1 over
  * any photo. On phones the text covers the whole picture, so the wash is even.
  */
 .wash {
   position: absolute;
   inset: 0;
-  background: rgba(10, 58, 71, 0.84);
+  background: rgba(10, 58, 99, 0.84);
 }
 
 .credit {
@@ -51,8 +51,8 @@
   z-index: 2;
   margin: 0;
   padding: 0.2rem 0.5rem;
-  background: rgba(13, 43, 56, 0.78);
-  color: #f3f8f9;
+  background: rgba(11, 31, 58, 0.78);
+  color: #f1f8fc;
   font-size: 0.7rem;
   line-height: 1.3;
 }
@@ -71,9 +71,9 @@
   .wash {
     background: linear-gradient(
       90deg,
-      rgba(10, 58, 71, 0.95) 0%,
-      rgba(10, 58, 71, 0.84) 42%,
-      rgba(10, 58, 71, 0.3) 100%
+      rgba(10, 58, 99, 0.95) 0%,
+      rgba(10, 58, 99, 0.84) 42%,
+      rgba(10, 58, 99, 0.3) 100%
     );
   }
 

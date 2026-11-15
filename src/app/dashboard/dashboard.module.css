@@ -1,51 +1,431 @@
-.page { max-width: 1100px; margin: 0 auto; padding: 4rem 1rem 3rem; }
-.header { margin-bottom: 1rem; }
-.title { margin: 0 0 0.25rem; font-size: 1.75rem; }
-.lede { margin: 0; color: var(--ink-soft); max-width: 60ch; }
-.desk { display: grid; gap: 1rem; }
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
-.modes { display: inline-flex; border: 1px solid var(--line-strong); background: var(--paper); }
-.mode, .modeOn { font: inherit; padding: 0.5rem 0.9rem; border: 0; background: transparent; color: var(--ink); cursor: pointer; border-radius: var(--radius-control); }
-.mode:hover { background: var(--hover); }
-.modeOn { background: var(--primary); color: var(--on-primary); }
-.mode:focus-visible, .modeOn:focus-visible, .action:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.badge, .badgeSim { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.25rem 0.6rem; background: var(--surface-strong); color: var(--ink); border-radius: var(--radius-control); }
-.badgeSim { background: var(--ink); color: var(--paper); }
-.mapWrap { position: relative; border: 1px solid var(--line-strong); background: var(--surface); height: min(60vh, 520px); min-height: 320px; }
-.map { height: 100%; width: 100%; z-index: 0; }
-.simTag { position: absolute; top: 0.5rem; right: 0.5rem; z-index: 500; background: var(--ink); color: var(--paper); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.25rem 0.6rem; }
-.panel { background: var(--paper); border: 1px solid var(--line); padding: 1rem; border-radius: var(--radius-card); display: grid; gap: 0.75rem; }
-.headline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.h2 { margin: 0; font-size: 1.15rem; }
-.h3 { margin: 0.5rem 0 0; font-size: 1rem; }
-.muted { color: var(--ink-soft); font-size: 0.875rem; margin: 0; }
-.error { color: var(--danger-ink); margin: 0; }
-.severity { font-weight: 700; padding: 0.25rem 0.7rem; background: var(--surface-strong); color: var(--ink); }
-.sev_watch, .sev_warning { background: var(--warn-bg); color: var(--warn-ink); }
-.sev_severe { background: var(--danger); color: #fff; }
-.sev_normal { background: var(--surface-strong); color: var(--ink); }
-.sev_unknown { background: transparent; color: var(--ink-soft); border: 1px dashed var(--line-strong); }
-.try { font: inherit; background: var(--paper); color: var(--ink); border: 1px solid var(--line-strong); padding: 0.4rem 0.8rem; cursor: pointer; border-radius: var(--radius-control); }
-.try:hover { background: var(--hover); }
-.try:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin: 0; }
-.facts dt { font-size: 0.8rem; color: var(--ink-soft); }
-.facts dd { margin: 0; font-size: 1.1rem; font-weight: 700; }
-.chart { margin: 0; }
-.chart svg { width: 100%; height: auto; }
-.slider { display: grid; gap: 0.35rem; font-size: 0.9rem; }
-.slider input { accent-color: var(--primary); }
-.event { border-left: 4px solid var(--primary); padding-left: 0.75rem; display: grid; gap: 0.25rem; }
-.event p { margin: 0; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
-.card { background: var(--surface); padding: 0.75rem; display: grid; gap: 0.15rem; }
-.alertBox { border-top: 1px solid var(--line); padding-top: 0.75rem; display: grid; gap: 0.5rem; }
-.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem; }
-.phone { background: var(--surface); border: 1px solid var(--line-strong); padding: 0.75rem; }
-.phone p { margin: 0.25rem 0 0; white-space: pre-wrap; }
-.alertActions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-.action { font: inherit; background: var(--primary); color: var(--on-primary); border: 0; padding: 0.5rem 0.9rem; cursor: pointer; border-radius: var(--radius-control); }
-.action:hover:not(:disabled) { background: var(--primary-hover); }
-.action:disabled { opacity: 0.6; cursor: default; }
-.disclaimers { margin-top: 1.5rem; background: var(--paper); border: 1px solid var(--line); padding: 1rem; font-size: 0.9rem; color: var(--ink-soft); }
-.disclaimers ol { margin: 0.5rem 0 0; padding-left: 1.25rem; display: grid; gap: 0.25rem; }
+.page {
+  max-width: 100rem;
+  margin: 0 auto;
+  padding: 4rem 1rem 3rem;
+}
+.header {
+  margin-bottom: 1rem;
+}
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+.lede {
+  margin: 0;
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+.desk {
+  display: grid;
+  gap: 1rem;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.modes {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+}
+.mode,
+.modeOn {
+  font: inherit;
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: var(--radius-control);
+}
+.mode:hover {
+  background: var(--hover);
+}
+.modeOn {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.mode:focus-visible,
+.modeOn:focus-visible,
+.action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.badge,
+.badgeSim {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+  background: var(--surface-strong);
+  color: var(--ink);
+  border-radius: var(--radius-control);
+}
+.badgeSim {
+  background: var(--ink);
+  color: var(--paper);
+}
+.mapWrap {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  height: min(72vh, 720px);
+  min-height: 360px;
+}
+.map {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
+.simTag {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 500;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.6rem;
+}
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 1rem;
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: 0.75rem;
+}
+.headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.h3 {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+}
+.muted {
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  margin: 0;
+}
+.error {
+  color: var(--danger-ink);
+  margin: 0;
+}
+.severity {
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+.sev_watch,
+.sev_warning {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.sev_severe {
+  background: var(--danger);
+  color: #fff;
+}
+.sev_normal {
+  background: var(--surface-strong);
+  color: var(--ink);
+}
+.sev_unknown {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line-strong);
+}
+.try {
+  font: inherit;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+}
+.try:hover {
+  background: var(--hover);
+}
+.try:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+.facts dt {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.facts dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.chart {
+  margin: 0;
+}
+.chart svg {
+  width: 100%;
+  height: auto;
+}
+.slider {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+.slider input {
+  accent-color: var(--primary);
+}
+.event {
+  border-left: 4px solid var(--primary);
+  padding-left: 0.75rem;
+  display: grid;
+  gap: 0.25rem;
+}
+.event p {
+  margin: 0;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.card {
+  background: var(--surface);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.15rem;
+}
+.alertBox {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.phones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+.phone {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  padding: 0.75rem;
+}
+.phone p {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+}
+.alertActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.action {
+  font: inherit;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 0;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+}
+.action:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.disclaimers {
+  margin-top: 1.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.disclaimers ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+/* ---------- scenario experiments ---------- */
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+.stack {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.scenario {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--primary);
+  padding: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+.scenarioHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.scenarioHead .h3 {
+  margin: 0;
+}
+.showing {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border-left: 4px solid var(--primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.fieldset {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line-strong);
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.fieldset legend {
+  padding: 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  min-height: 2.5rem;
+  align-items: center;
+}
+.choice input {
+  accent-color: var(--primary);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.select,
+.number {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  min-height: 2.75rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  max-width: 100%;
+}
+.select:focus-visible,
+.number:focus-visible,
+.slider input:focus-visible,
+.choice input:focus-visible,
+.linkButton:focus-visible,
+.try:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.slider input[type='range'] {
+  min-height: 2.75rem;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.try:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.linkButton {
+  font: inherit;
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.5rem;
+  min-height: 2.75rem;
+}
+.warnLine {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--warn-tint);
+  color: var(--on-amber);
+  font-size: 0.9rem;
+}
+.infoLine {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.caveats {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+.plain {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.depthRange {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.demoBanner {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  border-left: 4px solid var(--primary);
+  font-size: 0.9rem;
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* The map always takes the whole width; the scenario controls sit under it. */
+@media (min-width: 64rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

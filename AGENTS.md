@@ -48,7 +48,9 @@ Two agents work in this repo. Everything below the Next.js block is the shared c
 
 **Next slice (branch `admin-dashboard`, 2026-11-14): admin role, supervised changes, admin dashboard.** Brief: `docs/grok/brief-admin.md`. Grok writes the plan and tests first; Claude implements after they are red. Rule: the owner of a post edits it directly; everyone else needs admin approval.
 
-**Current slice (branch `dashboard`, 2026-11-14): the Dashboard (worldwide flood desk).** Tests are written and red. Contract: `docs/grok/plan.md` and `docs/grok/brief-dashboard.md`. Files: `tests/model-gumbel.test.ts`, `tests/model-severity.test.ts`, `tests/model-rise.test.ts`, `tests/model-terrarium.test.ts`, `tests/model-hand.test.ts`, `tests/model-flood.test.ts`, `tests/api-flood.test.ts`, `tests/alerts.test.ts`, `tests/alerts-schema.test.ts`, `tests/replay.test.ts`, `tests/dashboard-page.test.ts`. Claude implements until those pass. Do not edit the tests. Do not send a real alert. Do not change `src/proxy.ts`. Ask before applying the alert-table migration.
+**Current slice: Vapi voice gateway for missing people.** `tests/vapi-helpline.test.ts` is red on purpose. Contract: the voice section of `docs/grok/plan.md`. Tools are `check_missing_person` and `report_missing_person` only. Claude implements `src/core/helpline/vapi.ts` and `src/app/api/sms/vapi/route.ts` until that test passes. Do not edit the test. Do not change `src/proxy.ts` or `POST /api/sms`. Do not send a real call or SMS.
+
+**Previous slice (branch `dashboard`): the flood desk.** Contract: `docs/grok/brief-dashboard.md` and the dashboard tests listed in `docs/grok/plan.md`. Do not send a real alert. Ask before applying a new migration.
 
 ### Guide for implementing (Claude)
 

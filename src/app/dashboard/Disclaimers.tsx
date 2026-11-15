@@ -12,8 +12,9 @@ export function Disclaimers() {
           history.
         </li>
         <li>
-          Water depth uses an assumed bankfull depth (adjustable below the map), not a surveyed
-          channel.
+          Water depth comes from an assumed channel roughness (adjustable in the scenario panel) and
+          a slope read from the terrain. Bankfull, the level where a river leaves its banks, is
+          estimated and not surveyed, so depths are a likely range, not a measurement.
         </li>
         <li>Elevation is about 30 m resolution with errors of several metres.</li>
         <li>

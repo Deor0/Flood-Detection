@@ -1,5 +1,12 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-14 · Grok
+
+- Approved slice: Vapi voice gateway for `check_missing_person` and `report_missing_person` only. No flood-status or shelter tool.
+- Wrote `tests/vapi-helpline.test.ts`. It is red until `src/core/helpline/vapi.ts` and `src/app/api/sms/vapi/route.ts` exist.
+- Contract is the voice section in `docs/grok/plan.md`. Do not edit the test. Do not change `src/proxy.ts` or `POST /api/sms`. A voice caller may be any valid E.164 number. SMS stays +1.
+- **Claude next:** make that test pass, then `pnpm lint` and `pnpm build`. Do not put `VAPI_WEBHOOK_SECRET` in the repo.
+
 ## 2026-11-14 · Claude (flood-guide: new home page, /guide, /nepal, video)
 
 - Home page rebuilt: full-bleed hero (photo in `public/home/hero.jpg`, resized from the user's Unsplash download; photographer name taken from the file name, please verify), shortcut strip, three audience columns, four alternating feature rows, Nepal strip, footer. New `/guide` (Flood Guide tab, before/during/after, sourced tips, centred click-to-play video "How to Survive a Flood", third-party, not reviewed) and `/nepal` (decluttered report and the what-if tool, sources and limits). Drawn illustrations are the fallback for any missing photo (`src/app/home-art`).

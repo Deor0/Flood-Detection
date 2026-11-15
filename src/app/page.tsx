@@ -118,6 +118,9 @@ export default function Home() {
             <Link href="/find" className={styles.secondary}>
               Find a person
             </Link>
+            <Link href="/demo" className={styles.quiet}>
+              Try the demo
+            </Link>
             <Link href="/sign-in" className={styles.quiet}>
               Sign in
             </Link>

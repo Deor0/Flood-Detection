@@ -50,7 +50,7 @@ export function GuideVideo() {
             />
             <span className={styles.videoIcon} aria-hidden="true">
               <svg viewBox="0 0 48 48" width="48" height="48">
-                <rect width="48" height="48" fill="#0e6f7e" />
+                <rect width="48" height="48" fill="#2B4FC7" />
                 <path d="M19 14 L35 24 L19 34 Z" fill="#ffffff" />
               </svg>
             </span>

@@ -1,6 +1,19 @@
 # Plan (Grok owns this file)
 
-Status: **current slice is the Dashboard flood desk.** No dashboard model code exists yet. The tests below are red on purpose. Do not edit them. Do not send a real SMS, call, or alert. Do not change `src/proxy.ts` or `tests/clerk-gate.test.ts`. The full formula contract is `docs/grok/brief-dashboard.md`.
+Status: **current slice is the Vapi voice gateway for missing people.** `tests/vapi-helpline.test.ts` is red until `src/core/helpline/vapi.ts` and `src/app/api/sms/vapi/route.ts` exist. Do not edit the test. Do not change `src/proxy.ts`, `tests/clerk-gate.test.ts`, or `POST /api/sms`. Flood status and shelter tools are out of this slice.
+
+## Feature: voice helpline, check and report
+
+`POST /api/sms/vapi` is public because the proxy allows `/api/sms(.*)`. There is no webhook secret for now. Anyone who can reach the URL can report or search. Add a shared secret later if this is exposed beyond a demo.
+
+- `normalizeCallerPhone` accepts any valid E.164 number, including Nepal. The SMS simulator stays +1 only.
+- `report_missing_person` requires `name` and `lastKnownLocation`. `description` is stored as notes. The caller number is stored as `reporterPhone` and `contact`. Success returns `{ ok: true, publicId, name, status: "missing" }`. A blank name, blank location, or bad age returns `{ ok: false, error: "invalid" }` and inserts nothing. No caller number returns `no_caller_number`. The 11th report from one phone in 24 hours returns `rate_limited`.
+- `check_missing_person` uses `publicSearch`. It returns at most 3 matches of `{ publicId, name, status, region }`, initials for anyone under 18, and `{ ok: true, matches: [] }` for a one-letter name. It never returns contact, notes, or a full street.
+- Arguments may be an object or a JSON string. Calls may arrive on `toolCallList` or `toolCalls` (including `function.name` / `function.arguments`). An unknown tool returns `{ ok: false, error: "unknown_tool" }` with HTTP 200. Any other message type returns `{ ok: true }`.
+
+## Feature: dashboard flood desk
+
+The dashboard tests below were the previous slice. Do not edit them. Do not send a real SMS, call, or alert. Do not change `src/proxy.ts` or `tests/clerk-gate.test.ts`. The formula contract is `docs/grok/brief-dashboard.md`.
 
 ## Feature: dashboard flood desk
 

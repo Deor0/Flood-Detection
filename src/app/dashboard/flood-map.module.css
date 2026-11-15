@@ -1,0 +1,136 @@
+/* Map furniture: swipe divider, side tags and the depth legend. Fog/teal tokens, sharp edges. */
+.wrap {
+  overflow: hidden;
+}
+
+.legend {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 1.6rem;
+  z-index: 500;
+  display: grid;
+  gap: 0.25rem;
+  width: min(15rem, calc(100% - 1rem));
+  padding: 0.5rem 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.legendTitle {
+  font-weight: 700;
+}
+
+.legendBar {
+  display: block;
+  height: 0.6rem;
+}
+
+.legendScale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-soft);
+}
+
+.legendLine {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+}
+
+.dashSwatch {
+  flex: none;
+  width: 1.4rem;
+  border-top: 2px dashed #082a48;
+}
+
+/* A 44px-wide hit area around a 2px line, so it can be grabbed on a phone. */
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 600;
+  width: 44px;
+  margin-left: -22px;
+  cursor: ew-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.9rem;
+  height: 2.4rem;
+  margin: -1.2rem 0 0 -0.95rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+
+.knob::before,
+.knob::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -5px;
+  border: 5px solid transparent;
+}
+
+.knob::before {
+  left: 2px;
+  border-right-color: var(--ink);
+}
+
+.knob::after {
+  right: 2px;
+  border-left-color: var(--ink);
+}
+
+.divider:focus-visible .knob {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sideTag {
+  position: absolute;
+  top: 0.5rem;
+  z-index: 550;
+  max-width: 40%;
+  padding: 0.25rem 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sideA {
+  left: 2.9rem;
+}
+
+.sideB {
+  right: 6.6rem;
+}

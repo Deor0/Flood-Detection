@@ -20,9 +20,8 @@ export function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>
-        <Link href="/" className={styles.brand} aria-label="Flood Response, home">
-          <span className={styles.mark} aria-hidden="true" />
-          FLOOD RESPONSE
+        <Link href="/" className={styles.brand}>
+          <img src="/home/logo.png" alt="Poseidon Surge" className={styles.logo} />
         </Link>
         <nav aria-label="Main" className={styles.tabs}>
           {tabs.map((tab) => {
