@@ -5,7 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertPanel } from './AlertPanel';
 import { DischargeChart } from './DischargeChart';
 import { ReplayPanel } from './ReplayPanel';
+import { FullSimulation } from './FullSimulation';
 import { ScenarioPanel } from './ScenarioPanel';
+import {
+  buildSimulateRequest,
+  typicalFlow,
+  validateSimulateResponse,
+  type SimulateResult,
+} from '@/model/engine';
 import {
   DEFAULT_SCENARIO,
   forecastDays,
@@ -76,6 +83,15 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
   } | null>(null);
   const [saved, setSaved] = useState<{ label: string; overlay: Overlay | null } | null>(null);
   const [compareOn, setCompareOn] = useState(true);
+  // SFINCS full simulation: the last run, keyed by point and flow, and whether the map shows it.
+  const [engineRun, setEngineRun] = useState<{ key: string; result: SimulateResult } | null>(null);
+  const [engineState, setEngineState] = useState<{
+    running: boolean;
+    startedAt: number | null;
+    error: string;
+  }>({ running: false, startedAt: null, error: '' });
+  const [showRun, setShowRun] = useState(true);
+  const engineAbort = useRef<AbortController | null>(null);
   const abort = useRef<AbortController | null>(null);
   const terrainRef = useRef<Terrain | null>(null);
   const flights = useRef(0);
@@ -88,8 +104,12 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
   const onPick = useCallback(
     (lat: number, lng: number) => {
       abort.current?.abort();
+      engineAbort.current?.abort();
       terrainRef.current?.dispose();
       terrainRef.current = null;
+      setEngineRun(null);
+      setEngineState({ running: false, startedAt: null, error: '' });
+      setShowRun(true);
       const controller = new AbortController();
       abort.current = controller;
       setPicked({ lat, lng });
@@ -161,6 +181,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
   useEffect(
     () => () => {
       abort.current?.abort();
+      engineAbort.current?.abort();
       terrainRef.current?.dispose();
     },
     [],
@@ -201,8 +222,85 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
     };
   }, [terrain, q, scenario.roughness]);
   const sim = canSim ? (result?.sim ?? null) : null;
-  const overlay = canSim ? (result?.overlay ?? null) : null;
+  const handOverlay = canSim ? (result?.overlay ?? null) : null;
   const simulating = simKey !== null && result?.key !== simKey;
+
+  // The SFINCS run applies only to the point and flow it was run for.
+  const engineKey =
+    data && !data.noRiver && q !== null ? `${data.snapped.lat}|${data.snapped.lng}|${q}` : null;
+  const engineResult = engineRun && engineRun.key === engineKey ? engineRun.result : null;
+  const engineOverlay: Overlay | null = useMemo(
+    () =>
+      engineResult
+        ? {
+            url: engineResult.maxDepth.url,
+            bounds: engineResult.bounds,
+            rampMax: engineResult.maxDepth.scaleMax,
+            maxDepth: engineResult.stats.maxDepthM,
+            wetShare: 0,
+          }
+        : null,
+    [engineResult],
+  );
+  const usingRun = engineOverlay !== null && showRun;
+  const overlay = usingRun ? engineOverlay : handOverlay;
+
+  const runEngine = useCallback(async () => {
+    if (!data || data.noRiver || q === null || q <= 0 || !engineKey) return;
+    engineAbort.current?.abort();
+    const controller = new AbortController();
+    engineAbort.current = controller;
+    setEngineState({ running: true, startedAt: Date.now(), error: '' });
+    try {
+      const body = buildSimulateRequest(data.snapped, q, typicalFlow(data.series?.discharge), {
+        hours: 24,
+        halfWidthKm: 5,
+        resolution: 50,
+      });
+      const res = await fetch('/api/simulate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      const json = (await res.json().catch(() => null)) as { error?: unknown } | null;
+      if (controller.signal.aborted) return;
+      if (!res.ok) {
+        const message =
+          res.status === 503
+            ? 'Full simulation is offline; showing the quick estimate.'
+            : res.status === 504
+              ? 'The full simulation took too long; showing the quick estimate.'
+              : res.status === 401
+                ? 'Sign in to run the full simulation.'
+                : typeof json?.error === 'string'
+                  ? `Full simulation failed: ${json.error}`
+                  : `Full simulation failed (${res.status}).`;
+        setEngineState({ running: false, startedAt: null, error: message });
+        return;
+      }
+      const parsed = validateSimulateResponse(json);
+      if (!parsed) {
+        setEngineState({
+          running: false,
+          startedAt: null,
+          error: 'The flood engine sent an answer we could not read.',
+        });
+        return;
+      }
+      setEngineRun({ key: engineKey, result: parsed });
+      setShowRun(true);
+      setEngineState({ running: false, startedAt: null, error: '' });
+    } catch (e) {
+      if (controller.signal.aborted) return;
+      setEngineState({
+        running: false,
+        startedAt: null,
+        error:
+          e instanceof Error ? `Full simulation failed: ${e.message}` : 'Full simulation failed.',
+      });
+    }
+  }, [data, q, engineKey]);
 
   const patchScenario = useCallback(
     (patch: Partial<ScenarioState>) => setScenario((s) => ({ ...s, ...patch })),
@@ -297,6 +395,9 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                 overlayB={comparing ? overlay : null}
                 compare={comparing}
                 labels={{ a: 'A (saved)', b: 'B (now)' }}
+                layerLabel={
+                  usingRun ? 'Max depth, SFINCS model run' : 'Depth above ground, central estimate'
+                }
                 onPick={demo ? () => undefined : onPick}
               />
               <section className={styles.panel} aria-live="polite">
@@ -390,6 +491,19 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                         Assumed channel roughness, 30% either way.
                       </p>
                     )}
+                    {!demo && q !== null && q > 0 && (
+                      <FullSimulation
+                        result={engineResult}
+                        running={engineState.running}
+                        startedAt={engineState.startedAt}
+                        error={engineState.error}
+                        showRun={showRun}
+                        belowTypical={q <= typicalFlow(data.series?.discharge)}
+                        onRun={runEngine}
+                        onShowRun={setShowRun}
+                        onTryFlood={() => patchScenario({ basis: 'return', T: 20 })}
+                      />
+                    )}
                     {data.series && (
                       <DischargeChart
                         days={data.series.days}
@@ -416,7 +530,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                         drawn.
                       </p>
                     )}
-                    {sim && !overlay && (
+                    {sim && !handOverlay && !usingRun && (
                       <p className={styles.muted}>
                         At this flow the water stays inside the river channel, so nothing is drawn
                         on the map.
@@ -476,7 +590,10 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                 compareOn={compareOn}
                 canSave={overlay !== null}
                 onSaveA={() => {
-                  setSaved({ label: resolved.summary, overlay });
+                  setSaved({
+                    label: usingRun ? `${resolved.summary} (SFINCS run)` : resolved.summary,
+                    overlay,
+                  });
                   setCompareOn(true);
                 }}
                 onClearA={() => setSaved(null)}
