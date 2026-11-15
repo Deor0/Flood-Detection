@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useId, useState, type FormEvent } from 'react';
 import { useSignIn } from '@clerk/nextjs';
 import { IdCard, Lock } from 'lucide-react';
-import { destinationAfterAuth, toIdentifier } from '@/lib/auth-forms';
+import { destinationAfterAuth, isEmail } from '@/lib/auth-forms';
 import { Field, FormError, PasswordToggle, SubmitButton, type Status } from './AuthShared';
 import { ForgotPassword } from './ForgotPassword';
 import styles from './auth.module.css';
@@ -23,9 +23,10 @@ export function SignInForm() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setFormError(undefined);
-    const id = toIdentifier(identifier);
+    // Email only: phone sign-in is not enabled on the Clerk instance.
+    const id = isEmail(identifier) ? identifier.trim() : null;
     const found: typeof errors = {};
-    if (!id) found.identifier = 'Enter your email or US phone number.';
+    if (!id) found.identifier = 'Enter a valid email address.';
     if (!password) found.password = 'Enter your password.';
     setErrors(found);
     if (!id || !password) return;
@@ -74,7 +75,7 @@ export function SignInForm() {
         <form onSubmit={submit} noValidate className={styles.form}>
           <FormError message={formError} />
           <Field
-            label="Email or phone number"
+            label="Email address"
             icon={IdCard}
             error={errors.identifier}
             htmlFor={`${uid}-id`}
@@ -84,7 +85,8 @@ export function SignInForm() {
               id={`${uid}-id`}
               name="identifier"
               autoComplete="username"
-              placeholder="you@example.com or (555) 555-0100"
+              type="email"
+              placeholder="you@example.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               aria-invalid={!!errors.identifier}

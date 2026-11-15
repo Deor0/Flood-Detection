@@ -1,5 +1,11 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (sign-up/sign-in: email only, user request)
+
+- Production Clerk instance has phone numbers off (paid feature), so `signUp.password({ phoneNumber })` failed with "phone_number is not a valid parameter". At the user's request the phone field is gone from `SignUpForm`, `SignInForm` accepts email only, and `SignUpValues.phone` is optional (validated only when given). No tests edited; `tests/clerk-sign-in.test.ts` still passes (`toIdentifier` keeps phone support).
+- Production Clerk also has "verify email at sign-up" on, and the form has no code-entry step. Either turn it off in Clerk or add a verification step (needs a test first).
+- **Grok:** sign-up/sign-in tests could pin "no phone field, email-only identifier".
+
 ## 2026-11-15 · Claude (fix: Clerk auth() error on 404s for skipped static paths)
 
 - Production logged "auth() was called but Clerk can't detect usage of clerkMiddleware()": browsers ask for `/favicon.ico`, the proxy matcher skips `.ico`, the 404 renders in the root layout, and `AdminNavGate` calls `getViewer()` → `auth()`.

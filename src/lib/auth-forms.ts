@@ -24,7 +24,8 @@ export function passwordProblem(password: string): string | undefined {
 export type SignUpValues = {
   name: string;
   email: string;
-  phone: string;
+  /** Optional; the sign-up form no longer asks for it (Clerk phone sign-up is a paid feature). */
+  phone?: string;
   password: string;
   confirmPassword: string;
   consent: boolean;
@@ -35,7 +36,7 @@ export function validateSignUp(v: SignUpValues): Partial<Record<SignUpField, str
   const e: Partial<Record<SignUpField, string>> = {};
   if (v.name.trim().length < 2) e.name = 'Enter your full name.';
   if (!isEmail(v.email)) e.email = 'Enter a valid email address.';
-  if (!normalizeUsPhone(v.phone)) e.phone = 'Enter a valid US phone number.';
+  if (v.phone?.trim() && !normalizeUsPhone(v.phone)) e.phone = 'Enter a valid US phone number.';
   const pw = passwordProblem(v.password);
   if (pw) e.password = pw;
   if (v.confirmPassword !== v.password) e.confirmPassword = 'Passwords do not match.';

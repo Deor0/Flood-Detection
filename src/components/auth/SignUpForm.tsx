@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useId, useState, type FormEvent, type InputHTMLAttributes } from 'react';
 import { useSignUp } from '@clerk/nextjs';
-import { Lock, Mail, Phone, Server, ShieldCheck, User } from 'lucide-react';
+import { Lock, Mail, Server, ShieldCheck, User } from 'lucide-react';
 import {
   MIN_PASSWORD_LENGTH,
   destinationAfterAuth,
@@ -12,7 +12,6 @@ import {
   type SignUpField,
   type SignUpValues,
 } from '@/lib/auth-forms';
-import { normalizeUsPhone } from '@/lib/phone';
 import { Field, FormError, PasswordToggle, SubmitButton, type Status } from './AuthShared';
 import styles from './auth.module.css';
 
@@ -24,7 +23,6 @@ export function SignUpForm() {
   const [values, setValues] = useState<SignUpValues>({
     name: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
     consent: false,
@@ -48,7 +46,6 @@ export function SignUpForm() {
     setStatus('loading');
     const { error } = await signUp.password({
       emailAddress: values.email.trim(),
-      phoneNumber: normalizeUsPhone(values.phone) ?? undefined,
       password: values.password,
       ...splitName(values.name),
       // Client-side record of the SMS/email consent the user just gave.
@@ -114,19 +111,9 @@ export function SignUpForm() {
         <Field label="Full name" icon={User} {...fieldProps('name')}>
           {input('name', { autoComplete: 'name', autoFocus: true })}
         </Field>
-        <div className={styles.twoCol}>
-          <Field label="Email address" icon={Mail} {...fieldProps('email')}>
-            {input('email', { type: 'email', autoComplete: 'email' })}
-          </Field>
-          <Field label="Phone number" icon={Phone} {...fieldProps('phone')}>
-            {input('phone', {
-              type: 'tel',
-              inputMode: 'tel',
-              autoComplete: 'tel',
-              placeholder: '(555) 555-0100',
-            })}
-          </Field>
-        </div>
+        <Field label="Email address" icon={Mail} {...fieldProps('email')}>
+          {input('email', { type: 'email', autoComplete: 'email' })}
+        </Field>
         <div className={styles.twoCol}>
           <Field
             label="Password"
