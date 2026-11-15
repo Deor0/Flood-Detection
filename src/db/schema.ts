@@ -75,6 +75,8 @@ export const missingPersonEvents = pgTable(
         'edit_requested',
         'edit_approved',
         'edit_rejected',
+        /** A non-reporter said the person is safe; the reporter or an admin confirms it. */
+        'found_claimed',
       ],
     }).notNull(),
     /** Why (required for re-open and rejections). */

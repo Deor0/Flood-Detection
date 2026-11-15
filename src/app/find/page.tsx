@@ -4,11 +4,37 @@ import { Suspense } from 'react';
 import { HelplineNote } from '@/components/HelplineNote';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { getDb } from '@/db';
+import { suggestNames } from '@/core/missing/fuzzy';
 import { PUBLIC_SEARCH_MIN_CHARS, publicSearch } from '@/core/missing/publicSearch';
 import styles from '@/components/page-ui.module.css';
+import { StatusBadge } from '@/app/missing/StatusBadge';
+import local from '@/app/missing/missing.module.css';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Find a person · Flood Response' };
+export const metadata = { title: 'Find a person · Poseidon Surge' };
+
+/** Close spellings (one typo, Shrestha/Srestha) when nothing matched. Never a child's name. */
+async function Suggestions({ q }: { q: string }) {
+  let names: string[] = [];
+  try {
+    names = await suggestNames(getDb(), q);
+  } catch (err) {
+    console.error('find suggestions failed', err);
+  }
+  if (names.length === 0) return null;
+  return (
+    <p className={local.suggest}>
+      Did you mean{' '}
+      {names.map((n, i) => (
+        <span key={n}>
+          {i > 0 && (i === names.length - 1 ? ' or ' : ', ')}
+          <Link href={`/find?${new URLSearchParams({ q: n })}`}>{n}</Link>
+        </span>
+      ))}
+      ?
+    </p>
+  );
+}
 
 async function Results({ q }: { q: string }) {
   if (Array.from(q.replace(/\s/g, '')).length < PUBLIC_SEARCH_MIN_CHARS) {
@@ -29,7 +55,13 @@ async function Results({ q }: { q: string }) {
       </p>
     );
   }
-  if (people.length === 0) return <div className={styles.empty}>No one matches that name.</div>;
+  if (people.length === 0)
+    return (
+      <div className={styles.empty}>
+        No one matches that name.
+        <Suggestions q={q} />
+      </div>
+    );
   return (
     <>
       <p className={styles.count}>
@@ -40,17 +72,17 @@ async function Results({ q }: { q: string }) {
           <li key={p.publicId} className={styles.person}>
             <div className={styles.personTop}>
               <div>
-                <h2 className={styles.personName}>{p.name}</h2>
+                <h2 className={styles.personName}>
+                  <Link href={`/missing/${p.publicId}`} className={local.nameLink}>
+                    {p.name}
+                  </Link>
+                </h2>
                 <p className={styles.personMeta}>
                   {p.publicId}
                   {p.region ? ` · ${p.region}` : ''}
                 </p>
               </div>
-              <span
-                className={`${styles.badge} ${p.status === 'found' ? styles.badgeFound : styles.badgeMissing}`}
-              >
-                {p.status === 'found' ? 'FOUND' : 'MISSING'}
-              </span>
+              <StatusBadge status={p.status} />
             </div>
           </li>
         ))}
@@ -75,10 +107,12 @@ export default async function FindPage({
     <main className={styles.page}>
       <div className={styles.header}>
         <div>
+          <p className={local.kicker}>The Long Way Home</p>
           <h1 className={styles.title}>Find a person</h1>
           <p className={styles.lede}>
-            Search the missing persons registry by name. You will see whether someone is listed as
-            missing or found, and a general area only. Details of people under 18 are hidden.
+            Searching like Telemachus for news of family? Search the missing persons registry by
+            name. You will see whether someone is listed as missing or found, and a general area
+            only. Details of people under 18 are hidden.
           </p>
         </div>
       </div>
