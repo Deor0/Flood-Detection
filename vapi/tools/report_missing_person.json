@@ -1,0 +1,34 @@
+{
+  "type": "function",
+  "async": false,
+  "name": "report_missing_person",
+  "description": "Registers a missing person into the emergency registry when a caller reports someone missing.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Full name of the missing person"
+      },
+      "age": {
+        "type": "number",
+        "description": "Approximate age in years"
+      },
+      "lastKnownLocation": {
+        "type": "string",
+        "description": "Neighborhood, street, landmark, or city where last seen"
+      },
+      "description": {
+        "type": "string",
+        "description": "Physical description, clothing, or medical needs"
+      }
+    },
+    "required": ["name"]
+  },
+  "server": {
+    "url": "https://www.poseidonsurge.surf/api/postsms",
+    "headers": {
+      "Bypass-Tunnel-Reminder": "true"
+    }
+  }
+}
