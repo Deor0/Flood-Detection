@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
+import { findLikelyDuplicates, type LikelyDuplicate } from '@/core/missing/fuzzy';
 import { publicId } from '@/core/missing/names';
+import { cleanMissing } from '@/core/missing/validate';
 import {
   editMissing,
   markFound,
@@ -33,27 +35,56 @@ async function actor() {
   return viewer.userId ? { userId: viewer.userId, isAdmin: viewer.isAdmin } : null;
 }
 
-export async function reportAction(_prev: FormState, fd: FormData): Promise<FormState> {
+/** The report form's state: also the typed values (so a warning never wipes them) and duplicates. */
+export type ReportState = FormState & {
+  values?: ReturnType<typeof details>;
+  duplicates?: LikelyDuplicate[];
+  /** Changes on every answer, so the form remounts with `values`. */
+  attempt?: number;
+};
+
+export async function reportAction(prev: ReportState, fd: FormData): Promise<ReportState> {
   const who = await actor();
   if (!who) return { message: SIGN_IN };
+  const values = details(fd);
+  const keep = { values, attempt: (prev.attempt ?? 0) + 1 };
   try {
-    const result = await reportMissing(getDb(), who, details(fd));
+    // Before filing, look for the same person already in the registry. The reporter can still
+    // file once they have ticked "different person".
+    const clean = cleanMissing(values).value;
+    if (clean && fd.get('notDuplicate') !== 'yes') {
+      const duplicates = await findLikelyDuplicates(getDb(), clean);
+      if (duplicates.length > 0)
+        return {
+          ...keep,
+          duplicates,
+          message:
+            'This may already be in the registry. Check the records below before filing a second one.',
+        };
+    }
+    const result = await reportMissing(getDb(), who, values);
     if (!result.ok) {
       if (result.rateLimited)
         return {
+          ...keep,
           message:
             'You have reached the limit of 10 reports in 24 hours. Please try again later, or ask an admin for help.',
         };
       return {
+        ...keep,
         fields: result.fields as Record<string, string>,
         message: 'Check the highlighted fields.',
       };
     }
     revalidatePath('/missing');
-    return { ok: true, message: `Report filed as #${publicId(result.person.publicNumber)}.` };
+    return {
+      ok: true,
+      attempt: keep.attempt,
+      message: `Report filed as #${publicId(result.person.publicNumber)}.`,
+    };
   } catch (err) {
     console.error('reportAction failed', err);
-    return { message: SERVER_ERROR };
+    return { ...keep, message: SERVER_ERROR };
   }
 }
 
@@ -69,10 +100,19 @@ export async function markFoundAction(
   try {
     const result = await markFound(getDb(), who, id, text(fd, 'note'));
     revalidatePath('/missing');
-    if (result.ok) return { ok: true, message: 'Marked as found.' };
+    revalidatePath('/missing/[publicId]', 'page');
+    if (result.ok && result.pending)
+      return {
+        ok: true,
+        message:
+          'Thank you. The record now shows “Reported safe — confirming” until the reporter or an admin confirms it.',
+      };
+    if (result.ok) return { ok: true, message: 'Marked as found. Home (Ithaca).' };
+    if (result.reason === 'forbidden') return { message: FORBIDDEN };
     if (result.reason === 'rate_limited')
       return {
-        message: 'You have marked several people as found. Wait a few minutes and try again.',
+        message:
+          'You have several reports waiting or have marked several people found. Wait a few minutes and try again.',
       };
     return {
       ok: result.reason === 'already_found',

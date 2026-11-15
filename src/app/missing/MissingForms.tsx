@@ -1,23 +1,26 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { History, Pencil, UserCheck } from 'lucide-react';
 import { FieldError, StateBanner, inputClass } from '@/components/FormBits';
 import styles from '@/components/page-ui.module.css';
 import type { FormState } from '@/app/form-state';
+import local from './missing.module.css';
 import {
   editAction,
   markFoundAction,
   reopenAction,
   reportAction,
   requestEditAction,
+  type ReportState,
 } from './actions';
 
 const initial: FormState = {};
 
 export type Details = {
   name?: string;
-  age?: number | null;
+  age?: number | string | null;
   lastSeenLocation?: string | null;
   notes?: string | null;
   contact?: string | null;
@@ -27,13 +30,19 @@ export function DetailFields({
   state,
   values,
   hideContact,
+  hideNotes,
+  idPrefix = 'new',
 }: {
   state: FormState;
   values?: Details;
   hideContact?: boolean;
+  /** Notes about a child are private to the reporter and admins; suggestions cannot change them. */
+  hideNotes?: boolean;
+  /** The record id (or "new"): labels must point at this form's inputs, even if two names match. */
+  idPrefix?: string;
 }) {
   const f = (name: string) => ({
-    id: `f-${name}-${values?.name ?? 'new'}`,
+    id: `f-${name}-${idPrefix}`,
     name,
     className: inputClass(state, name),
     'aria-invalid': !!state.fields?.[name],
@@ -55,11 +64,13 @@ export function DetailFields({
         <input {...f('lastSeenLocation')} defaultValue={values?.lastSeenLocation ?? ''} />
         <FieldError state={state} name="lastSeenLocation" />
       </div>
-      <div className={`${styles.field} ${styles.span2}`}>
-        <label htmlFor={f('notes').id}>Notes</label>
-        <textarea {...f('notes')} defaultValue={values?.notes ?? ''} rows={2} />
-        <FieldError state={state} name="notes" />
-      </div>
+      {!hideNotes && (
+        <div className={`${styles.field} ${styles.span2}`}>
+          <label htmlFor={f('notes').id}>Notes</label>
+          <textarea {...f('notes')} defaultValue={values?.notes ?? ''} rows={2} />
+          <FieldError state={state} name="notes" />
+        </div>
+      )}
       {!hideContact && (
         <div className={`${styles.field} ${styles.span2}`}>
           <label htmlFor={f('contact').id}>Contact / case lead</label>
@@ -72,14 +83,38 @@ export function DetailFields({
 }
 
 export function ReportForm() {
-  const [state, action, pending] = useActionState(reportAction, initial);
+  const [state, action, pending] = useActionState(reportAction, initial as ReportState);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.ok) formRef.current?.reset();
   }, [state]);
+  const v = state.ok ? undefined : state.values;
   return (
     <form ref={formRef} action={action} noValidate className={styles.formGrid}>
-      <DetailFields state={state} />
+      {/* Remounts after each answer so the typed details come back instead of an empty form. */}
+      <DetailFields key={state.attempt ?? 0} state={state} values={v} />
+      {state.duplicates && state.duplicates.length > 0 && (
+        <div className={`${local.duplicates} ${styles.span2}`} role="alert">
+          <strong>Is this the same person?</strong>
+          <ul>
+            {state.duplicates.map((d) => (
+              <li key={d.id}>
+                <Link href={`/missing/${d.publicId}`} target="_blank">
+                  {d.publicId}
+                </Link>{' '}
+                {d.name}
+                {d.age !== null ? `, ${d.age}` : ''}
+                {d.region ? ` · ${d.region}` : ''} ·{' '}
+                {d.status === 'found' ? 'Found' : 'Still listed as missing'}
+              </li>
+            ))}
+          </ul>
+          <label className={local.check}>
+            <input type="checkbox" name="notDuplicate" value="yes" />
+            <span>This is a different person. File a new report anyway.</span>
+          </label>
+        </div>
+      )}
       <div className={`${styles.formActions} ${styles.span2}`}>
         <button type="submit" className={styles.button} disabled={pending}>
           {pending ? 'Filing…' : 'File report'}
@@ -97,12 +132,19 @@ export function PersonActions({
   values,
   canEditDirectly,
   isAdmin,
+  claimed = false,
+  notesHidden = false,
 }: {
   id: string;
   status: 'missing' | 'found';
   values: Details;
+  /** Reporter or admin: edits and marks found directly. Others suggest and report safe. */
   canEditDirectly: boolean;
   isAdmin: boolean;
+  /** Someone has reported this person safe and it waits for confirmation. */
+  claimed?: boolean;
+  /** The notes were withheld from this viewer (a child's record). */
+  notesHidden?: boolean;
 }) {
   const [panel, setPanel] = useState<'found' | 'edit' | 'reopen' | null>(null);
   const [foundState, foundAction, foundPending] = useActionState(
@@ -129,7 +171,8 @@ export function PersonActions({
             aria-expanded={panel === 'found'}
             onClick={() => toggle('found')}
           >
-            <UserCheck size={14} aria-hidden="true" /> Mark as found
+            <UserCheck size={14} aria-hidden="true" />{' '}
+            {!canEditDirectly ? 'Report safe' : claimed ? 'Confirm found' : 'Mark as found'}
           </button>
         )}
         <button
@@ -173,11 +216,19 @@ export function PersonActions({
                 }}
               >
                 <input type="checkbox" name="confirm" value="yes" required />
-                <span>I confirm this person has been found. Only an admin can undo this.</span>
+                <span>
+                  {canEditDirectly
+                    ? 'I confirm this person has been found. Only an admin can undo this.'
+                    : 'I believe this person is safe. The reporter or an admin confirms it before the record shows as found.'}
+                </span>
               </label>
               <div className={styles.formActions} style={{ marginTop: '0.75rem' }}>
                 <button type="submit" className={styles.button} disabled={foundPending}>
-                  {foundPending ? 'Saving…' : 'Confirm found'}
+                  {foundPending
+                    ? 'Saving…'
+                    : canEditDirectly
+                      ? 'Confirm found'
+                      : 'Send for confirmation'}
                 </button>
                 <StateBanner state={foundState} />
               </div>
@@ -193,7 +244,13 @@ export function PersonActions({
               Your suggestion goes to an admin. The record changes once it is approved.
             </p>
           )}
-          <DetailFields state={editState} values={values} hideContact={!canEditDirectly} />
+          <DetailFields
+            state={editState}
+            values={values}
+            hideContact={!canEditDirectly}
+            hideNotes={!canEditDirectly && notesHidden}
+            idPrefix={id}
+          />
           <div className={`${styles.formActions} ${styles.span2}`}>
             <button type="submit" className={styles.button} disabled={editPending}>
               {editPending ? 'Saving…' : canEditDirectly ? 'Save changes' : 'Send suggestion'}

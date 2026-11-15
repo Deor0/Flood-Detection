@@ -1,5 +1,15 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (judge feedback: Missing People & Find, branch `judge/missing`)
+
+Approved one-time test exception: new tests in `tests/missing-judge.test.ts`; `tests/admin-edits.test.ts` "stops one user at 10 pending suggestions" now uses its own reporters (the shared reporter hit the 10-reports-a-day limit; test bug, now green).
+
+- **Privacy:** signed-out `/missing` now behaves like `/find`: no list without 2+ letters, `publicSearch` fields only (initials for children, coarse area, status; no age, notes, contact). Signed-in non-owners no longer see a child's notes, and their suggestions never change them (`requestEdit`).
+- **Found is two-step for non-reporters:** `markFound` by anyone but the reporter/admin files a found claim in the existing suggestion queue (`proposed = { _kind: 'found', note }`, event `found_claimed`), returns `{ ok: true, pending: true, requestId }`; the card shows "REPORTED SAFE — confirming". `approveEditRequest` on a claim marks found (claimant = finder); the reporter marking found settles open claims; reject leaves it missing. SMS path unchanged (only the reporting phone ever reaches `markFound`). `listEditRequests` items have `kind: 'edit' | 'found'`.
+- **Duplicates / fuzzy:** `src/core/missing/fuzzy.ts` (TS-side over the 2000 newest rows): `findLikelyDuplicates` shown in the report form ("Is this the same person? REG-…", tick to file anyway); `suggestNames` for "Did you mean …" on `/missing` and `/find`. `names.ts`: `foldName` (Shrestha/Srestha, Laxmi/Lakshmi, Ray/Rai…), `editDistance`, `fuzzyScore`, `parsePublicId`.
+- New `/missing/[publicId]`: record page with a public-safe timeline (`src/core/missing/timeline.ts`, no actor ids/notes/reasons). Status filter chips on `/missing`. Form ids use the record id. Odyssey copy (kicker, badges, Telemachus line).
+- Checks: tsc clean, lint 0 errors, tests 100/101 (only `api-flood`, another slice), build ok.
+
 ## 2026-11-15 · Claude (Offline Helpline UI: SMS + voice, frontend only)
 
 The user asked for UI and UX changes only, with no backend changes and no tests. This is approved UI-only work: no test was written or edited, and nothing in `src/app/api`, `src/core`, `src/db`, `src/sms` or `src/proxy.ts` changed.
