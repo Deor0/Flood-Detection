@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { AppDb } from '@/db/types';
 import {
   PROGRAM_CATEGORIES,
@@ -41,7 +41,21 @@ export type CleanProgram = {
   capacity: number | null;
 };
 
-export function cleanProgram(input: ProgramInput): {
+/** A start this far in the past still counts as "now" (slow form, clock skew). */
+export const PAST_START_GRACE_MS = 15 * 60 * 1000;
+
+export type CleanProgramOptions = {
+  now?: Date;
+  /** Skip the "starts in the past" check (admins backfilling a record). */
+  allowPastStart?: boolean;
+  /** On an edit: the current start. Keeping it unchanged is fine even if it has passed. */
+  currentStartsAt?: Date;
+};
+
+export function cleanProgram(
+  input: ProgramInput,
+  opts: CleanProgramOptions = {},
+): {
   value?: CleanProgram;
   errors: FieldErrors<keyof ProgramInput>;
 } {
@@ -72,6 +86,12 @@ export function cleanProgram(input: ProgramInput): {
     errors.endsAt = 'Choose an end date and time.';
   if (!errors.startsAt && !errors.endsAt && endsAt <= startsAt)
     errors.endsAt = 'The end must be after the start.';
+  if (!errors.startsAt && !opts.allowPastStart) {
+    const now = opts.now ?? new Date();
+    const unchanged = opts.currentStartsAt?.getTime() === startsAt.getTime();
+    if (!unchanged && startsAt.getTime() < now.getTime() - PAST_START_GRACE_MS)
+      errors.startsAt = 'The start time has already passed. Choose a time in the future.';
+  }
 
   let capacity: number | null = null;
   const rawCap = typeof input.capacity === 'string' ? input.capacity.trim() : input.capacity;
@@ -110,7 +130,7 @@ export async function createProgram(
   input: ProgramInput,
 ): Promise<CreateProgramResult> {
   const actor = normActor(actorIn);
-  const { value, errors } = cleanProgram(input);
+  const { value, errors } = cleanProgram(input, { allowPastStart: actor.isAdmin });
   if (!value) return { ok: false, fields: errors };
   return db.transaction(async (tx) => {
     if (!actor.isAdmin) {
@@ -305,6 +325,74 @@ export async function listMyPrograms(db: AppDb, userId: string): Promise<MyProgr
   return rows.map(({ program, registered }) => ({ ...program, registered }));
 }
 
+export type RegistrationNotice = 'cancelled' | 'under_review' | 'time_changed' | 'place_changed';
+
+export type MyRegistration = typeof programs.$inferSelect & {
+  registeredAt: Date;
+  /** Active registrations, so the attendee sees how full it is. */
+  registered: number;
+  /** What changed since the user registered, most important first; empty when nothing did. */
+  notices: RegistrationNotice[];
+};
+
+/**
+ * Programs the user is registered for (registrations they cancelled themselves are left out) that
+ * have not ended, soonest first. A cancelled or changed program stays on the list with a notice,
+ * so a cancelled shelter session never silently disappears.
+ */
+export async function listMyRegistrations(
+  db: AppDb,
+  userId: string,
+  now: Date = new Date(),
+): Promise<MyRegistration[]> {
+  const rows = await db
+    .select({ program: programs, registeredAt: programRegistrations.createdAt })
+    .from(programRegistrations)
+    .innerJoin(programs, eq(programs.id, programRegistrations.programId))
+    .where(
+      and(
+        eq(programRegistrations.userId, userId),
+        isNull(programRegistrations.cancelledAt),
+        gte(programs.endsAt, now),
+      ),
+    )
+    .orderBy(asc(programs.startsAt));
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.program.id);
+  const [edits, counts] = await Promise.all([
+    db
+      .select({
+        programId: programEvents.programId,
+        changes: programEvents.changes,
+        createdAt: programEvents.createdAt,
+      })
+      .from(programEvents)
+      .where(and(inArray(programEvents.programId, ids), eq(programEvents.kind, 'edited'))),
+    db
+      .select({ programId: programRegistrations.programId, n: registeredCountSql })
+      .from(programRegistrations)
+      .where(inArray(programRegistrations.programId, ids))
+      .groupBy(programRegistrations.programId),
+  ]);
+  const countOf = new Map(counts.map((c) => [c.programId, c.n]));
+
+  return rows.map(({ program, registeredAt }) => {
+    const changed = new Set<string>();
+    for (const e of edits) {
+      if (e.programId !== program.id || e.createdAt < registeredAt) continue;
+      for (const field of Object.keys((e.changes as Record<string, unknown> | null) ?? {}))
+        changed.add(field);
+    }
+    const notices: RegistrationNotice[] = [];
+    if (program.status === 'cancelled') notices.push('cancelled');
+    else if (program.status !== 'approved') notices.push('under_review');
+    if (changed.has('startsAt') || changed.has('endsAt')) notices.push('time_changed');
+    if (changed.has('location')) notices.push('place_changed');
+    return { ...program, registeredAt, registered: countOf.get(program.id) ?? 0, notices };
+  });
+}
+
 /** Every program in every status with its active registration count (admin view). */
 export async function listAllPrograms(db: AppDb): Promise<MyProgram[]> {
   const rows = await db
@@ -400,15 +488,32 @@ const EDITABLE = [
   'capacity',
 ] as const;
 
-/** Admin or host. Applies at once and logs {field:{from,to}}. */
+/**
+ * Changes attendees and reviewers rely on. A host changing any of these on an approved program
+ * sends it back to review; topics and capacity stay a direct edit.
+ */
+export const MATERIAL_FIELDS = [
+  'title',
+  'category',
+  'organizer',
+  'location',
+  'startsAt',
+  'endsAt',
+] as const;
+
+/**
+ * Admin or host, logged as {field:{from,to}}. Admins' edits apply at once. A host's edit applies at
+ * once too, except that a material change to an approved program (see MATERIAL_FIELDS) moves it
+ * back to 'pending' until an admin approves it again, and a rejected program is resubmitted.
+ */
 export async function editProgram(
   db: AppDb,
   actorIn: ProgramActor,
   id: string,
   input: ProgramInput,
+  now: Date = new Date(),
 ): Promise<EditResult> {
   const actor = normActor(actorIn);
-  const { value, errors } = cleanProgram(input);
   return db.transaction(async (tx) => {
     const [program] = await tx
       .select()
@@ -418,6 +523,11 @@ export async function editProgram(
       .limit(1);
     if (!program) return { ok: false, reason: 'not_found' } as const;
     if (!canManageProgram(actor, program)) return { ok: false, reason: 'forbidden' } as const;
+    const { value, errors } = cleanProgram(input, {
+      now,
+      allowPastStart: actor.isAdmin,
+      currentStartsAt: program.startsAt,
+    });
     if (!value) return { ok: false, reason: 'invalid', fields: errors } as const;
     if (program.status === 'cancelled' && !actor.isAdmin)
       return { ok: false, reason: 'cancelled' } as const;
@@ -441,7 +551,10 @@ export async function editProgram(
     }
     if (Object.keys(changes).length === 0) return { ok: true, program, changes } as const;
 
-    const resubmit = program.status === 'rejected' && !actor.isAdmin;
+    const material = MATERIAL_FIELDS.some((f) => f in changes);
+    const resubmit =
+      !actor.isAdmin &&
+      (program.status === 'rejected' || (program.status === 'approved' && material));
     if (resubmit) {
       // Re-submitting puts it back in the queue, so the same cap as a new submission applies.
       await tx.execute(
@@ -454,13 +567,19 @@ export async function editProgram(
       if (n >= LIMITS.pendingProgramsPerUser)
         return { ok: false, reason: 'too_many_pending' } as const;
     }
-    const now = new Date();
     const [updated] = await tx
       .update(programs)
       .set({
         ...value,
         updatedAt: now,
-        ...(resubmit ? { status: 'pending' as const, rejectionReason: null } : {}),
+        ...(resubmit
+          ? {
+              status: 'pending' as const,
+              rejectionReason: null,
+              reviewedByUserId: null,
+              reviewedAt: null,
+            }
+          : {}),
       })
       .where(eq(programs.id, id))
       .returning();
