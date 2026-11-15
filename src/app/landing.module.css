@@ -1,359 +1,502 @@
+/*
+ * Home page. Spacing scale: 0.25 / 0.5 / 1 / 1.5 / 3 / 6 rem, used for every gap and padding.
+ * Each band has its own background so nothing reads as one stacked column:
+ * deep-teal hero, white shortcut strip, Fog audience, white features, ink Nepal, Fog footer.
+ */
 .page {
+  --s1: 0.25rem;
+  --s2: 0.5rem;
+  --s3: 1rem;
+  --s4: 1.5rem;
+  --s5: 3rem;
+  --s6: 6rem;
   color: var(--ink);
   font-family: var(--font-sans);
 }
 
-/* ---------- hero: tide-ink band, full width ---------- */
+.band {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 var(--s3);
+}
+
+/* ---------- hero: full-bleed picture, text set directly on it ---------- */
 .hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 70svh;
   background: #0a3a47;
-  color: #f3f8f9;
+  color: #ffffff;
 }
 
 .heroInner {
-  display: grid;
-  gap: 2.5rem;
+  position: relative;
+  z-index: 1;
+  width: 100%;
   max-width: 72rem;
   margin: 0 auto;
-  padding: 3.5rem 1rem 3.5rem;
-}
-
-.eyebrow {
-  margin: 0 0 0.9rem;
-  color: #8fd0d8;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  padding: var(--s5) var(--s3) calc(var(--s5) + var(--s4));
 }
 
 .heading {
   margin: 0;
-  font-size: clamp(2.1rem, 6vw, 3.6rem);
+  font-size: clamp(2.6rem, 8vw, 4.6rem);
   font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
 }
 
-.headingSecond {
+.line {
   display: block;
-  color: #8fd0d8;
+  animation: rise 0.7s ease-out both;
+}
+
+.line:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.line:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.6rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .lede {
-  max-width: 38rem;
-  margin: 1.25rem 0 0;
-  color: #cfe3e8;
-  font-size: 1.05rem;
-  line-height: 1.65;
+  max-width: 30rem;
+  margin: var(--s4) 0 0;
+  color: #e6f1f3;
+  font-size: 1.15rem;
+  line-height: 1.6;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 2rem;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s4);
 }
 
 .primary,
-.secondary,
-.ghost,
-.onDark {
+.secondary {
   display: inline-block;
   padding: 0.85rem 1.4rem;
-  border: 2px solid transparent;
+  border: 2px solid #ffffff;
   border-radius: var(--radius-control);
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   text-decoration: none;
 }
 
 .primary {
-  background: #f3f8f9;
+  background: #ffffff;
   color: #0a3a47;
 }
 
 .primary:hover {
-  background: #ffffff;
-}
-
-.ghost,
-.onDark {
-  border-color: #8fd0d8;
-  color: #f3f8f9;
-}
-
-.ghost:hover,
-.onDark:hover {
-  background: rgba(143, 208, 216, 0.16);
+  background: #e6f1f3;
 }
 
 .secondary {
-  border-color: var(--primary);
-  color: var(--primary);
+  color: #ffffff;
 }
 
 .secondary:hover {
-  background: var(--hover);
+  background: rgba(255, 255, 255, 0.16);
 }
 
-/* In the hero the secondary button reads on dark. */
-.hero .secondary {
-  border-color: #f3f8f9;
-  color: #f3f8f9;
+.quiet {
+  color: #ffffff;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.hero .secondary:hover {
-  background: rgba(243, 248, 249, 0.14);
+.quiet:hover {
+  text-decoration-thickness: 2px;
 }
 
 .primary:focus-visible,
 .secondary:focus-visible,
-.ghost:focus-visible,
-.onDark:focus-visible {
-  outline: 3px solid #f2a900;
+.quiet:focus-visible {
+  outline: 3px solid #ffffff;
   outline-offset: 3px;
 }
 
-.figure {
-  margin: 0;
+/* ---------- shortcut strip: sits on the hero's bottom edge ---------- */
+.shortcuts {
+  position: relative;
+  z-index: 2;
+  max-width: 72rem;
+  margin: calc(var(--s5) * -1) auto 0;
+  padding: 0 var(--s3);
 }
 
-.diagram {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid #2a6070;
-}
-
-.figure figcaption {
-  margin-top: 0.6rem;
-  color: #a9c6cd;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
-
-/* ---------- facts strip ---------- */
-.facts {
+.shortcutList {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  max-width: 72rem;
-  margin: 0 auto;
-  border-bottom: 1px solid var(--line-strong);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--primary);
 }
 
-.fact {
+.shortcut {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 1.4rem 1rem;
-  border-top: 1px solid var(--line);
+  gap: var(--s1);
+  height: 100%;
+  padding: var(--s3);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
 }
 
-.factValue {
-  color: var(--primary);
-  font-size: 1.9rem;
+.shortcutList li:nth-child(even) .shortcut {
+  border-right: 0;
+}
+
+.shortcutList li:nth-child(n + 3) .shortcut {
+  border-bottom: 0;
+}
+
+.shortcut strong {
+  font-size: 1rem;
+}
+
+.shortcut span {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.shortcut:hover {
+  background: var(--hover);
+}
+
+.shortcut:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+/* ---------- shared headings ---------- */
+.sectionTitle {
+  margin: 0;
+  font-size: clamp(1.6rem, 3.6vw, 2.2rem);
   font-weight: 800;
+  line-height: 1.15;
   letter-spacing: -0.02em;
 }
 
-.factLabel {
+.intro {
+  max-width: 34rem;
+  margin: var(--s2) 0 0;
   color: var(--ink-soft);
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-/* ---------- sections ---------- */
-.section {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 3.25rem 1rem 0.5rem;
-}
-
-.sectionTitle {
-  margin: 0 0 1.25rem;
-  font-size: clamp(1.45rem, 3.4vw, 2rem);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-}
-
-.subTitle {
-  margin: 0 0 0.75rem;
   font-size: 1.05rem;
-  font-weight: 700;
+  line-height: 1.6;
 }
 
-.steps {
+/* ---------- audience: three columns divided by rules, not boxed cards ---------- */
+.audience {
+  padding: var(--s5) 0;
+}
+
+.audienceList {
   display: grid;
-  gap: 1rem;
+  margin: var(--s4) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line-strong);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.whoTitle {
   margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.whoLine {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.textLink {
+  align-self: flex-start;
+  margin-top: var(--s1);
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.textLink:hover {
+  color: var(--primary-hover);
+  text-decoration-thickness: 2px;
+}
+
+.textLink:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.fine {
+  margin: var(--s4) 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* ---------- features: alternating picture and text rows ---------- */
+.features {
+  padding: var(--s5) 0;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.rows {
+  margin: var(--s4) 0 0;
   padding: 0;
   list-style: none;
 }
 
-.card {
-  padding: 1.25rem;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-top: 4px solid var(--primary);
+.row {
+  display: grid;
+  gap: var(--s4);
+  align-items: center;
+  padding: var(--s4) 0;
+  border-top: 1px solid var(--line);
 }
 
-.card h3 {
-  margin: 0.4rem 0 0.5rem;
-  font-size: 1.1rem;
+.row:first-child {
+  border-top: 0;
 }
 
-.card p {
+.rowText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+
+.rowTitle {
+  margin: 0;
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.rowLine {
+  max-width: 28rem;
   margin: 0;
   color: var(--ink-soft);
+  font-size: 1.05rem;
   line-height: 1.6;
 }
 
-.step {
+.rowLink {
+  display: inline-block;
+  margin-top: var(--s2);
+  padding: 0.75rem 1.25rem;
+  border: 2px solid var(--primary);
   color: var(--primary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-/* severity ladder: amber and red appear only here, on severity labels */
-.ladder {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0;
-  margin-top: 1.5rem;
-  border: 1px solid var(--line-strong);
+.rowLink:hover {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
-.rung {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.9rem 1rem;
-  font-size: 0.85rem;
+.rowLink:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 
-.rung strong {
-  font-size: 1rem;
-}
-
-.normal {
-  background: var(--ok-bg);
-  color: var(--ok-ink);
-}
-
-.watch {
-  background: var(--warn-tint);
-  color: var(--on-amber);
-}
-
-.warning {
-  background: var(--amber);
-  color: var(--on-amber);
-}
-
-.severe {
-  background: var(--danger);
-  color: #ffffff;
-}
-
-.split {
-  display: grid;
-  gap: 2rem;
-}
-
-.text {
-  max-width: 40rem;
-  margin: 0 0 1.25rem;
+.extra {
+  margin: var(--s3) 0 0;
   color: var(--ink-soft);
-  line-height: 1.7;
+  font-size: 0.9rem;
 }
 
-.list,
-.limits {
-  margin: 0;
-  padding-left: 1.2rem;
-  color: var(--ink-soft);
-  line-height: 1.7;
-}
-
-.limits {
-  max-width: 46rem;
-}
-
-/* ---------- case study: a quiet dark band ---------- */
-.case {
-  margin-top: 3.5rem;
+/* ---------- Nepal strip ---------- */
+.nepal {
   background: #0d2b38;
   color: #f3f8f9;
 }
 
-.caseInner {
+.nepalInner {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: var(--s5) var(--s3);
 }
 
-.caseEyebrow {
-  margin: 0 0 0.4rem;
+.nepalTitle {
+  margin: 0 0 var(--s3);
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+  font-weight: 800;
+}
+
+.nepalFacts {
+  display: grid;
+  gap: var(--s3);
+  margin: 0 0 var(--s3);
+  padding: 0;
+  list-style: none;
+}
+
+.nepalFacts li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nepalFacts strong {
   color: #8fd0d8;
-  font-size: 0.75rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
-.caseTitle {
-  margin: 0 0 1rem;
-  font-size: clamp(1.5rem, 3.6vw, 2.2rem);
-  font-weight: 800;
-}
-
-.caseText {
-  max-width: 42rem;
-  margin: 0 0 1rem;
+.nepalFacts span {
   color: #cfe3e8;
-  line-height: 1.7;
+  font-size: 0.85rem;
 }
 
+.nepalText {
+  max-width: 40rem;
+  margin: 0 0 var(--s4);
+  color: #cfe3e8;
+  line-height: 1.6;
+}
+
+.onDark {
+  display: inline-block;
+  padding: 0.85rem 1.4rem;
+  border: 2px solid #8fd0d8;
+  color: #f3f8f9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.onDark:hover {
+  background: rgba(143, 208, 216, 0.16);
+}
+
+.onDark:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/* ---------- footer ---------- */
 .footer {
-  margin: 2rem 0 0;
-  padding: 1rem 0 3rem;
-  border-top: 1px solid var(--line-strong);
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: var(--s4) var(--s3) var(--s5);
   color: var(--ink-soft);
   font-size: 0.85rem;
   line-height: 1.6;
 }
 
+.footer p {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.footer a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ---------- wider screens ---------- */
 @media (min-width: 52rem) {
-  .heroInner {
-    grid-template-columns: 1.05fr 0.95fr;
-    align-items: center;
-    padding: 4.5rem 1rem 4.5rem;
+  .hero {
+    min-height: 78vh;
   }
 
-  .facts {
+  .heroInner {
+    padding-bottom: calc(var(--s6) + var(--s2));
+  }
+
+  .shortcutList {
     grid-template-columns: repeat(4, 1fr);
   }
 
-  .fact {
-    border-top: 0;
-    border-left: 1px solid var(--line);
+  .shortcutList li .shortcut {
+    border-right: 1px solid var(--line);
+    border-bottom: 0;
   }
 
-  .fact:first-child {
-    border-left: 0;
+  .shortcutList li:last-child .shortcut {
+    border-right: 0;
   }
 
-  .steps {
+  .audience,
+  .features {
+    padding: var(--s6) 0;
+  }
+
+  .audienceList {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .ladder {
-    grid-template-columns: repeat(4, 1fr);
+  .who {
+    padding: var(--s4) var(--s4) var(--s4) 0;
+    border-bottom: 0;
   }
 
-  .split {
-    grid-template-columns: 1.2fr 1fr;
+  .who + .who {
+    padding-left: var(--s4);
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .row {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s5);
+    padding: var(--s5) 0;
+  }
+
+  /* Rows 1 and 3 have the picture left, rows 2 and 4 have the text left. */
+  .row:nth-child(even) .rowMedia {
+    order: 2;
+  }
+
+  .nepalFacts {
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    gap: var(--s5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    animation: none;
   }
 }

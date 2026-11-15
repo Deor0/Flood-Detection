@@ -1,0 +1,45 @@
+.box {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+
+.card {
+  aspect-ratio: 4 / 3;
+}
+
+.hero {
+  aspect-ratio: 16 / 10;
+}
+
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Photo credit: small, bottom-left, readable over any picture. */
+.credit {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  background: rgba(13, 43, 56, 0.78);
+  color: #f3f8f9;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.credit a:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}

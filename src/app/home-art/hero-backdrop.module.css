@@ -1,0 +1,92 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0a3a47;
+}
+
+.picture {
+  position: absolute;
+  inset: 0;
+}
+
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Fallback illustration: right half on desktop, a faint full-width layer on phones. */
+.art {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  opacity: 0.5;
+}
+
+.artSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+}
+
+/*
+ * Deep-teal wash. White text sits on at least ~0.8 of #0a3a47, which keeps it above 4.5:1 over
+ * any photo. On phones the text covers the whole picture, so the wash is even.
+ */
+.wash {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 58, 71, 0.84);
+}
+
+.credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  background: rgba(13, 43, 56, 0.78);
+  color: #f3f8f9;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.credit a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.credit a:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+@media (min-width: 52rem) {
+  .wash {
+    background: linear-gradient(
+      90deg,
+      rgba(10, 58, 71, 0.95) 0%,
+      rgba(10, 58, 71, 0.84) 42%,
+      rgba(10, 58, 71, 0.3) 100%
+    );
+  }
+
+  .art {
+    width: 62%;
+    left: auto;
+    right: 0;
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  video.fill {
+    display: none;
+  }
+}

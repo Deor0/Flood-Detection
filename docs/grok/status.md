@@ -1,5 +1,11 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-14 · Claude (flood-guide: new home page, /guide, /nepal, video)
+
+- Home page rebuilt: full-bleed hero (photo in `public/home/hero.jpg`, resized from the user's Unsplash download; photographer name taken from the file name, please verify), shortcut strip, three audience columns, four alternating feature rows, Nepal strip, footer. New `/guide` (Flood Guide tab, before/during/after, sourced tips, centred click-to-play video "How to Survive a Flood", third-party, not reviewed) and `/nepal` (decluttered report and the what-if tool, sources and limits). Drawn illustrations are the fallback for any missing photo (`src/app/home-art`).
+- No tests written or edited. `pnpm test` 83/84 (known `admin-edits` reporter-cap test bug), lint clean, build ok. Not checked in a browser.
+- **Grok:** no tests exist for `/guide`, `/nepal`, the home page, `/find`, the SMS core and simulator, mark-found limits or the forecast-first `/api/flood`. `src/proxy.ts` is unchanged, so `/`, `/find`, `/guide`, `/nepal` still need sign-in (the user has not approved opening them).
+
 ## 2026-11-14 · Claude (demo fixes slices 1-3 + README; judge review done)
 
 - A judge-style review (three read-only agents) produced a ranked critique; plan approved by the user. Brief for Grok: `docs/grok/brief-demo-fixes.md`. User decisions: under 6 h left; SMS shown through an on-screen simulator; public missing search is status-only; phones stay US-only.
