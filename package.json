@@ -18,7 +18,9 @@
   "dependencies": {
     "@clerk/nextjs": "^7.9.26",
     "@fontsource/roboto": "^5.3.0",
+    "@gsap/react": "^2.1.2",
     "drizzle-orm": "^0.45.4",
+    "gsap": "^3.15.1",
     "leaflet": "^1.9.4",
     "libphonenumber-js": "^1.13.16",
     "lucide-react": "^1.72.0",
