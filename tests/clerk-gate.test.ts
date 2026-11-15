@@ -46,10 +46,12 @@ describe('Clerk session gate', () => {
       '/sign-in(.*)',
       '/sign-up(.*)',
       '/api/sms(.*)',
+      '/api/postsms(.*)',
       '/geo/(.*)',
+      '/demo(.*)',
     ]);
 
-    for (const path of ['/sign-in', '/sign-in/factor-one', '/sign-up', '/api/sms', '/geo/place.json']) {
+    for (const path of ['/sign-in', '/sign-in/factor-one', '/sign-up', '/api/sms', '/api/postsms', '/geo/place.json', '/demo']) {
       protect.mockClear();
       await proxy(incoming(path));
       expect(protect, path).not.toHaveBeenCalled();
