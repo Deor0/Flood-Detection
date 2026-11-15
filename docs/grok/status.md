@@ -1,5 +1,10 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (fix: production data pages hung forever)
+
+- Live `/missing` and `/communities` sent the page shell, then the database part never finished; the DB itself answered in ~0.2 s and showed no app queries waiting. Cause (inferred): one module-level postgres-js connection (`max: 1`) reused across requests; Vercel freezes idle instances, the pooler drops the socket, and the reused dead socket hangs that query and everything queued behind it.
+- `src/db/index.ts`: a fresh connection per request via React `cache` (`max: 1, prepare: false, idle_timeout: 5, connect_timeout: 10`), nothing kept across requests. Local production build: sequential, 10 parallel, and after-idle requests all load in ~0.3 s.
+
 ## 2026-11-15 · Claude (sign-up/sign-in: email only, user request)
 
 - Production Clerk instance has phone numbers off (paid feature), so `signUp.password({ phoneNumber })` failed with "phone_number is not a valid parameter". At the user's request the phone field is gone from `SignUpForm`, `SignInForm` accepts email only, and `SignUpValues.phone` is optional (validated only when given). No tests edited; `tests/clerk-sign-in.test.ts` still passes (`toIdentifier` keeps phone support).
