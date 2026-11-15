@@ -68,6 +68,8 @@ const EDIT_REFUSALS = {
   cancelled: 'This program was cancelled and can no longer be edited.',
   capacity_below_registered:
     'Capacity cannot be lower than the number of people already registered.',
+  too_many_pending:
+    'You already have the maximum number of programs waiting for review. Wait for a decision first.',
 } as const;
 
 /** Bind the program id: `editProgramAction.bind(null, id)` then use as a form action. */

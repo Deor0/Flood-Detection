@@ -1,0 +1,359 @@
+.page {
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* ---------- hero: tide-ink band, full width ---------- */
+.hero {
+  background: #0a3a47;
+  color: #f3f8f9;
+}
+
+.heroInner {
+  display: grid;
+  gap: 2.5rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3.5rem 1rem 3.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.9rem;
+  color: #8fd0d8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0;
+  font-size: clamp(2.1rem, 6vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.headingSecond {
+  display: block;
+  color: #8fd0d8;
+}
+
+.lede {
+  max-width: 38rem;
+  margin: 1.25rem 0 0;
+  color: #cfe3e8;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.primary,
+.secondary,
+.ghost,
+.onDark {
+  display: inline-block;
+  padding: 0.85rem 1.4rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primary {
+  background: #f3f8f9;
+  color: #0a3a47;
+}
+
+.primary:hover {
+  background: #ffffff;
+}
+
+.ghost,
+.onDark {
+  border-color: #8fd0d8;
+  color: #f3f8f9;
+}
+
+.ghost:hover,
+.onDark:hover {
+  background: rgba(143, 208, 216, 0.16);
+}
+
+.secondary {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.secondary:hover {
+  background: var(--hover);
+}
+
+/* In the hero the secondary button reads on dark. */
+.hero .secondary {
+  border-color: #f3f8f9;
+  color: #f3f8f9;
+}
+
+.hero .secondary:hover {
+  background: rgba(243, 248, 249, 0.14);
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.ghost:focus-visible,
+.onDark:focus-visible {
+  outline: 3px solid #f2a900;
+  outline-offset: 3px;
+}
+
+.figure {
+  margin: 0;
+}
+
+.diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid #2a6070;
+}
+
+.figure figcaption {
+  margin-top: 0.6rem;
+  color: #a9c6cd;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* ---------- facts strip ---------- */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 72rem;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1.4rem 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.factValue {
+  color: var(--primary);
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.factLabel {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* ---------- sections ---------- */
+.section {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3.25rem 1rem 0.5rem;
+}
+
+.sectionTitle {
+  margin: 0 0 1.25rem;
+  font-size: clamp(1.45rem, 3.4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.subTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.steps {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  padding: 1.25rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--primary);
+}
+
+.card h3 {
+  margin: 0.4rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.card p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.step {
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+/* severity ladder: amber and red appear only here, on severity labels */
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin-top: 1.5rem;
+  border: 1px solid var(--line-strong);
+}
+
+.rung {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+}
+
+.rung strong {
+  font-size: 1rem;
+}
+
+.normal {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.watch {
+  background: var(--warn-tint);
+  color: var(--on-amber);
+}
+
+.warning {
+  background: var(--amber);
+  color: var(--on-amber);
+}
+
+.severe {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.split {
+  display: grid;
+  gap: 2rem;
+}
+
+.text {
+  max-width: 40rem;
+  margin: 0 0 1.25rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.list,
+.limits {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.limits {
+  max-width: 46rem;
+}
+
+/* ---------- case study: a quiet dark band ---------- */
+.case {
+  margin-top: 3.5rem;
+  background: #0d2b38;
+  color: #f3f8f9;
+}
+
+.caseInner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+}
+
+.caseEyebrow {
+  margin: 0 0 0.4rem;
+  color: #8fd0d8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.caseTitle {
+  margin: 0 0 1rem;
+  font-size: clamp(1.5rem, 3.6vw, 2.2rem);
+  font-weight: 800;
+}
+
+.caseText {
+  max-width: 42rem;
+  margin: 0 0 1rem;
+  color: #cfe3e8;
+  line-height: 1.7;
+}
+
+.footer {
+  margin: 2rem 0 0;
+  padding: 1rem 0 3rem;
+  border-top: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 52rem) {
+  .heroInner {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    padding: 4.5rem 1rem 4.5rem;
+  }
+
+  .facts {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .fact {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .fact:first-child {
+    border-left: 0;
+  }
+
+  .steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .ladder {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .split {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}

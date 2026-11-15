@@ -8,6 +8,7 @@ import {
   type ProgramCategory,
 } from '@/db/schema';
 import { LIMITS, canManageProgram } from '@/core/permissions';
+import { parseZoned } from '@/lib/time';
 
 /** A plain user id (treated as a non-admin) or an actor object. */
 export type ProgramActor = string | { userId: string; isAdmin?: boolean };
@@ -63,8 +64,8 @@ export function cleanProgram(input: ProgramInput): {
   const topics = (input.topics ?? '').trim();
   if (topics.length > 500) errors.topics = 'Topics are too long (500 characters max).';
 
-  const startsAt = new Date(input.startsAt);
-  const endsAt = new Date(input.endsAt);
+  const startsAt = parseZoned(input.startsAt);
+  const endsAt = parseZoned(input.endsAt);
   if (!input.startsAt || Number.isNaN(startsAt.getTime()))
     errors.startsAt = 'Choose a start date and time.';
   if (!input.endsAt || Number.isNaN(endsAt.getTime()))
@@ -381,7 +382,11 @@ export const rejectProgram = (db: AppDb, actor: ProgramActor, id: string, reason
 
 export type EditResult =
   | { ok: true; program: typeof programs.$inferSelect; changes: Record<string, unknown> }
-  | { ok: false; reason: 'forbidden' | 'not_found' | 'cancelled' | 'capacity_below_registered' }
+  | {
+      ok: false;
+      reason:
+        'forbidden' | 'not_found' | 'cancelled' | 'capacity_below_registered' | 'too_many_pending';
+    }
   | { ok: false; reason: 'invalid'; fields: FieldErrors<keyof ProgramInput> };
 
 const EDITABLE = [
@@ -437,6 +442,18 @@ export async function editProgram(
     if (Object.keys(changes).length === 0) return { ok: true, program, changes } as const;
 
     const resubmit = program.status === 'rejected' && !actor.isAdmin;
+    if (resubmit) {
+      // Re-submitting puts it back in the queue, so the same cap as a new submission applies.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtext(${'program-submit:' + actor.userId}))`,
+      );
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)`.mapWith(Number) })
+        .from(programs)
+        .where(and(eq(programs.createdByUserId, actor.userId), eq(programs.status, 'pending')));
+      if (n >= LIMITS.pendingProgramsPerUser)
+        return { ok: false, reason: 'too_many_pending' } as const;
+    }
     const now = new Date();
     const [updated] = await tx
       .update(programs)

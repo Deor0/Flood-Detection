@@ -5,13 +5,24 @@ import type { ProgramCategory } from '@/db/schema';
 import { CATEGORY_BADGES } from '@/core/programs/categories';
 import { listPrograms } from '@/core/programs/service';
 import styles from '@/components/page-ui.module.css';
+import { appTimeZone } from '@/lib/time';
 import { RegisterButton } from './ProgramForms';
 
-const day = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-const clock = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+const zone = appTimeZone();
+const day = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  timeZone: zone,
+});
+const clock = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: zone,
+});
 
 function when(start: Date, end: Date) {
-  const sameDay = start.toDateString() === end.toDateString();
+  const sameDay = day.format(start) === day.format(end);
   return sameDay
     ? `${day.format(start)}, ${clock.format(start)} – ${clock.format(end)}`
     : `${day.format(start)}, ${clock.format(start)} – ${day.format(end)}, ${clock.format(end)}`;

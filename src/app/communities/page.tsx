@@ -6,6 +6,7 @@ import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import styles from '@/components/page-ui.module.css';
 import { ProgramResults } from './ProgramResults';
+import { appTimeZone } from '@/lib/time';
 import { HostForm } from './ProgramForms';
 import { MyPrograms } from './MyPrograms';
 
@@ -47,7 +48,7 @@ export default async function CommunitiesPage({
         <p className={styles.lede}>
           New programs are submitted for review and listed once an admin approves them.
         </p>
-        <HostForm />
+        <HostForm timeZone={appTimeZone()} />
       </details>
 
       <Suspense fallback={<ListSkeleton />}>

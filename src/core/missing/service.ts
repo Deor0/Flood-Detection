@@ -108,7 +108,11 @@ export async function getMissing(db: AppDb, id: string): Promise<MissingPerson |
 }
 
 export type FoundResult =
-  { ok: true; person: MissingPerson } | { ok: false; reason: 'not_found' | 'already_found' };
+  | { ok: true; person: MissingPerson }
+  | { ok: false; reason: 'not_found' | 'already_found' | 'rate_limited' };
+
+/** One account cannot flip the registry: at most 5 mark-found actions per 10 minutes. Admins are exempt. */
+export const MARK_FOUND_LIMIT = { count: 5, windowMs: 10 * 60 * 1000 } as const;
 
 /** missing -> found. Safe to call twice: the second call changes nothing. */
 export async function markFound(
@@ -119,6 +123,24 @@ export async function markFound(
 ): Promise<FoundResult> {
   const cleanNote = (note ?? '').trim().slice(0, 500) || null;
   return db.transaction(async (tx) => {
+    const who = actor.userId ?? actor.phone;
+    if (!actor.isAdmin && who) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${'missing-found:' + who}))`);
+      const since = new Date(Date.now() - MARK_FOUND_LIMIT.windowMs);
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(missingPersonEvents)
+        .where(
+          and(
+            eq(missingPersonEvents.kind, 'found'),
+            actor.userId
+              ? eq(missingPersonEvents.actorUserId, actor.userId)
+              : eq(missingPersonEvents.actorPhone, actor.phone as string),
+            gte(missingPersonEvents.createdAt, since),
+          ),
+        );
+      if (n >= MARK_FOUND_LIMIT.count) return { ok: false, reason: 'rate_limited' } as const;
+    }
     const [current] = await tx
       .select()
       .from(missingPersons)
@@ -159,6 +181,15 @@ export type EditResult =
 
 const EDITABLE = ['name', 'age', 'lastSeenLocation', 'notes', 'contact'] as const;
 type Changes = Record<string, { from: unknown; to: unknown }>;
+
+type Base = Record<(typeof EDITABLE)[number], string | number | null>;
+const baseOf = (p: MissingPerson): Base => ({
+  name: p.name,
+  age: p.age,
+  lastSeenLocation: p.lastSeenLocation,
+  notes: p.notes,
+  contact: p.contact,
+});
 
 function diffPerson(current: MissingPerson, value: CleanMissing): Changes {
   const changes: Changes = {};
@@ -258,7 +289,9 @@ export async function requestEdit(
         missingPersonId: id,
         submittedByUserId: userId,
         baseUpdatedAt: person.updatedAt,
-        proposed: value,
+        // `_base` = the record's values when the suggestion was made, so approval can apply only
+        // the fields the suggester actually changed.
+        proposed: { ...value, _base: baseOf(person) },
         status: 'pending',
       })
       .returning();
@@ -293,12 +326,15 @@ export async function listEditRequests(
     .where(eq(missingPersonEditRequests.status, opts.status ?? 'pending'))
     .orderBy(asc(missingPersonEditRequests.createdAt));
   return rows.map(({ request, person }) => {
-    const proposed = request.proposed as CleanMissing;
+    const { _base: base, ...proposed } = request.proposed as CleanMissing & { _base?: Base };
+    const diff = diffPerson(person, proposed);
+    // Show only what the suggester changed; fields edited since are not part of the suggestion.
+    if (base) for (const f of EDITABLE) if (proposed[f] === base[f]) delete diff[f];
     return {
       request,
       person,
       proposed,
-      diff: diffPerson(person, proposed),
+      diff,
       stale: person.updatedAt.getTime() > request.baseUpdatedAt.getTime(),
     };
   });
@@ -332,14 +368,36 @@ export async function approveEditRequest(
       .limit(1);
     if (!current) return { ok: false, reason: 'not_found' } as const;
 
-    const proposed = req.proposed as CleanMissing;
+    const { _base: base, ...proposed } = req.proposed as CleanMissing & { _base?: Base };
     const stale = current.updatedAt.getTime() > req.baseUpdatedAt.getTime();
-    const changes = diffPerson(current, proposed);
+    // Apply only what the suggester changed, and never over a newer change to the same field.
+    // A suggestion never touches the private contact line.
+    const apply: Partial<CleanMissing> = {};
+    const skipped: string[] = [];
+    for (const field of EDITABLE) {
+      if (field === 'contact') continue;
+      const suggested = proposed[field];
+      if (base) {
+        if (suggested === base[field]) continue; // not part of the suggestion
+        if (current[field] !== base[field]) {
+          if (current[field] !== suggested) skipped.push(field); // changed since: newer wins
+          continue;
+        }
+      } else if (current[field] === suggested) continue; // older request without a snapshot
+      (apply as Record<string, unknown>)[field] = suggested;
+    }
+    const changes: Changes = {};
+    for (const [field, to] of Object.entries(apply))
+      changes[field] = { from: current[field as (typeof EDITABLE)[number]], to };
     let person = current;
     if (Object.keys(changes).length > 0) {
       [person] = await tx
         .update(missingPersons)
-        .set({ ...proposed, nameNormalized: normalizeName(proposed.name), updatedAt: sql`now()` })
+        .set({
+          ...apply,
+          ...(apply.name ? { nameNormalized: normalizeName(apply.name) } : {}),
+          updatedAt: sql`now()`,
+        })
         .where(eq(missingPersons.id, current.id))
         .returning();
       await tx.insert(missingPersonEvents).values({
@@ -357,7 +415,7 @@ export async function approveEditRequest(
       missingPersonId: current.id,
       kind: 'edit_approved',
       actorUserId: actor.userId ?? null,
-      changes: { requestId, submittedBy: req.submittedByUserId, stale },
+      changes: { requestId, submittedBy: req.submittedByUserId, stale, skipped },
     });
     return { ok: true, person, stale } as const;
   });
@@ -461,11 +519,28 @@ export async function reopenMissing(
   });
 }
 
-/** The person with `contact` removed unless the viewer is an admin or the reporter. */
+/**
+ * The person with private fields removed unless the viewer may see them: `contact` is for admins
+ * and the reporter; the found note (it can reveal where someone is now) is also for the finder.
+ */
 export function redactForViewer<
-  P extends { contact: string | null; reporterUserId: string | null; reporterPhone: string | null },
+  P extends {
+    contact: string | null;
+    reporterUserId: string | null;
+    reporterPhone: string | null;
+    foundNote?: string | null;
+    foundByUserId?: string | null;
+    foundByPhone?: string | null;
+  },
 >(person: P, actor: Actor): P {
-  return canSeeContact(actor, person) ? person : { ...person, contact: null };
+  const privileged = canSeeContact(actor, person);
+  const isFinder =
+    (!!actor.userId && person.foundByUserId === actor.userId) ||
+    (!!actor.phone && person.foundByPhone === actor.phone);
+  const out = { ...person };
+  if (!privileged) out.contact = null;
+  if (!privileged && !isFinder && 'foundNote' in out) out.foundNote = null;
+  return out;
 }
 
 export async function missingHistory(db: AppDb, id: string) {

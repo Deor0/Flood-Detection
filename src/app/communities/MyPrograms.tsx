@@ -6,6 +6,7 @@ import { canManageProgram } from '@/core/permissions';
 import { getViewer } from '@/lib/roles';
 import { CancelProgramButton, EditProgramForm } from './ProgramForms';
 import styles from './programs.module.css';
+import { appTimeZone } from '@/lib/time';
 
 export const STATUS_LABEL: Record<ProgramStatus, string> = {
   pending: 'Pending review',
@@ -57,6 +58,7 @@ export async function MyPrograms() {
                   <details className={styles.details}>
                     <summary>Edit</summary>
                     <EditProgramForm
+                      timeZone={appTimeZone()}
                       program={{
                         id: p.id,
                         title: p.title,

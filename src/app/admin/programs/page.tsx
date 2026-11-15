@@ -17,13 +17,14 @@ import styles from './admin-programs.module.css';
 import { adminCancelProgramAction, adminEditProgramAction } from './actions';
 import { ApproveButton, RejectForm } from './ReviewControls';
 import { lookupUsers, whoIs } from './lookup';
+import { appTimeZone } from '@/lib/time';
 
 export const dynamic = 'force-dynamic';
 
 const stamp = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
-  timeZone: 'UTC',
+  timeZone: appTimeZone(),
 });
 
 export default async function AdminProgramsPage() {
@@ -85,7 +86,7 @@ async function PendingQueue() {
             {CATEGORY_LABELS[p.category]} · organized by {p.organizer} · {p.location}
           </p>
           <p className={mine.meta}>
-            {stamp.format(p.startsAt)} to {stamp.format(p.endsAt)} UTC ·{' '}
+            {stamp.format(p.startsAt)} to {stamp.format(p.endsAt)} ({appTimeZone()}) ·{' '}
             {p.capacity === null ? 'open access' : `capacity ${p.capacity}`}
           </p>
           {p.topics && <p className={mine.meta}>Topics: {p.topics}</p>}
@@ -130,6 +131,7 @@ async function AllPrograms() {
             <details className={mine.details}>
               <summary>Edit</summary>
               <EditProgramForm
+                timeZone={appTimeZone()}
                 save={adminEditProgramAction}
                 program={{
                   id: p.id,

@@ -5,6 +5,7 @@ import { PROGRAM_CATEGORIES } from '@/db/schema';
 import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { FieldError, StateBanner, inputClass } from '@/components/FormBits';
 import styles from '@/components/page-ui.module.css';
+import { toZonedInput } from '@/lib/time';
 import type { FormState } from '@/app/form-state';
 import {
   cancelAction,
@@ -16,7 +17,7 @@ import {
 
 const initial: FormState = {};
 
-export function HostForm() {
+export function HostForm({ timeZone = 'UTC' }: { timeZone?: string }) {
   const [state, action, pending] = useActionState(hostAction, initial);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -62,12 +63,12 @@ export function HostForm() {
         <FieldError state={state} name="location" />
       </div>
       <div className={styles.field}>
-        <label htmlFor="host-startsAt">Starts</label>
+        <label htmlFor="host-startsAt">Starts ({timeZone})</label>
         <input {...field('startsAt')} type="datetime-local" />
         <FieldError state={state} name="startsAt" />
       </div>
       <div className={styles.field}>
-        <label htmlFor="host-endsAt">Ends</label>
+        <label htmlFor="host-endsAt">Ends ({timeZone})</label>
         <input {...field('endsAt')} type="datetime-local" />
         <FieldError state={state} name="endsAt" />
       </div>
@@ -146,19 +147,15 @@ export type EditableProgram = {
   capacity: number | null;
 };
 
-/** ISO instant -> "YYYY-MM-DDTHH:mm" in the browser's local zone, for datetime-local. */
-function toLocalInput(iso: string) {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 /** Inline edit for the host or an admin. The server decides who may save. */
 export function EditProgramForm({
   program,
+  timeZone = 'UTC',
   save = editProgramAction,
 }: {
   program: EditableProgram;
+  /** The zone times are read in (the server's APP_TIMEZONE); pass `appTimeZone()`. */
+  timeZone?: string;
   /** Defaults to the host/admin action; the admin page passes its own admin-only action. */
   save?: (programId: string, prev: FormState, fd: FormData) => Promise<FormState>;
 }) {
@@ -166,9 +163,10 @@ export function EditProgramForm({
     (prev: FormState, fd: FormData) => save(program.id, prev, fd),
     initial,
   );
-  // Dates are formatted in the browser (ref callback, no render mismatch with the server's zone).
+  // Dates are shown in the app's fixed zone, the same one the server reads them in, so saving
+  // without changing anything records no change.
   const dateRef = (iso: string) => (el: HTMLInputElement | null) => {
-    if (el && !el.value) el.value = toLocalInput(iso);
+    if (el && !el.value) el.value = toZonedInput(iso, timeZone);
   };
 
   const id = (n: string) => `edit-${program.id}-${n}`;
@@ -208,12 +206,12 @@ export function EditProgramForm({
         <FieldError state={state} name="location" />
       </div>
       <div className={styles.field}>
-        <label htmlFor={id('startsAt')}>Starts</label>
+        <label htmlFor={id('startsAt')}>Starts ({timeZone})</label>
         <input {...field('startsAt')} type="datetime-local" ref={dateRef(program.startsAt)} />
         <FieldError state={state} name="startsAt" />
       </div>
       <div className={styles.field}>
-        <label htmlFor={id('endsAt')}>Ends</label>
+        <label htmlFor={id('endsAt')}>Ends ({timeZone})</label>
         <input {...field('endsAt')} type="datetime-local" ref={dateRef(program.endsAt)} />
         <FieldError state={state} name="endsAt" />
       </div>

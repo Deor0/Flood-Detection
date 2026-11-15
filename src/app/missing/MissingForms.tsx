@@ -164,6 +164,17 @@ export function PersonActions({
                 <label htmlFor={`note-${id}`}>Where were they found? (optional)</label>
                 <input id={`note-${id}`} name="note" className={styles.input} maxLength={500} />
               </div>
+              <label
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'flex-start',
+                  marginTop: '0.75rem',
+                }}
+              >
+                <input type="checkbox" name="confirm" value="yes" required />
+                <span>I confirm this person has been found. Only an admin can undo this.</span>
+              </label>
               <div className={styles.formActions} style={{ marginTop: '0.75rem' }}>
                 <button type="submit" className={styles.button} disabled={foundPending}>
                   {foundPending ? 'Saving…' : 'Confirm found'}

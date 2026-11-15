@@ -73,6 +73,7 @@ const EDIT_REFUSALS = {
   forbidden: DENIED,
   not_found: 'That program no longer exists.',
   cancelled: 'This program was cancelled.',
+  too_many_pending: 'This host has too many programs waiting for review.',
   capacity_below_registered:
     'Capacity cannot be lower than the number of people already registered.',
 } as const;

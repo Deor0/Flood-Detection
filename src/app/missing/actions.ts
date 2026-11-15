@@ -64,10 +64,16 @@ export async function markFoundAction(
 ): Promise<FormState> {
   const who = await actor();
   if (!who) return { message: SIGN_IN };
+  if (fd.get('confirm') !== 'yes')
+    return { message: 'Tick the box to confirm this person has been found.' };
   try {
     const result = await markFound(getDb(), who, id, text(fd, 'note'));
     revalidatePath('/missing');
     if (result.ok) return { ok: true, message: 'Marked as found.' };
+    if (result.reason === 'rate_limited')
+      return {
+        message: 'You have marked several people as found. Wait a few minutes and try again.',
+      };
     return {
       ok: result.reason === 'already_found',
       message:

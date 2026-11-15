@@ -9,6 +9,7 @@ const TABS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/missing', label: 'Missing People' },
   { href: '/communities', label: 'Communities' },
+  { href: '/sms-simulator', label: 'SMS Simulator' },
 ] as const;
 
 /** Top bar for signed-in pages. The profile menu (UserButton) includes sign out. */
@@ -18,7 +19,10 @@ export function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>
-        <span className={styles.brand}>FLOOD RESPONSE</span>
+        <Link href="/" className={styles.brand} aria-label="Flood Response, home">
+          <span className={styles.mark} aria-hidden="true" />
+          FLOOD RESPONSE
+        </Link>
         <nav aria-label="Main" className={styles.tabs}>
           {tabs.map((tab) => {
             const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
