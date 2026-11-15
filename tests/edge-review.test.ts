@@ -2,7 +2,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { cleanMissing } from '@/core/missing/validate';
 import { normalizeName } from '@/core/missing/names';
 import { editMissing, markFound, reportMissing, searchMissing } from '@/core/missing/service';
-import { cleanProgram, createProgram, listPrograms, registerForProgram } from '@/core/programs/service';
+import {
+  cancelRegistration,
+  cleanProgram,
+  createProgram,
+  listPrograms,
+  registerForProgram,
+} from '@/core/programs/service';
 import { createTestDb } from './db';
 
 const actor = { userId: 'user_reporter' };
@@ -53,7 +59,7 @@ describe('missing person edges', () => {
       notes: 'changed by someone else',
     });
     const found = await markFound(ctx.db, other, reported.person.id, 'not the reporter');
-    expect(edited.ok).toBe(true);
+    expect(edited).toEqual({ ok: false, reason: 'forbidden' });
     expect(found.ok).toBe(true);
   });
 
@@ -93,7 +99,8 @@ describe('program edges', () => {
   });
 
   it('shows a program that has started and not ended, and hides one that has ended', async () => {
-    const live = await createProgram(ctx.db, actor.userId, {
+    const publisher = { userId: actor.userId, isAdmin: true };
+    const live = await createProgram(ctx.db, publisher, {
       title: 'In progress briefing',
       category: 'volunteer_briefing',
       organizer: 'Team',
@@ -102,7 +109,7 @@ describe('program edges', () => {
       endsAt: '2026-11-14T18:00:00.000Z',
       capacity: '',
     });
-    const over = await createProgram(ctx.db, actor.userId, {
+    const over = await createProgram(ctx.db, publisher, {
       title: 'Finished briefing',
       category: 'volunteer_briefing',
       organizer: 'Team',
@@ -120,7 +127,8 @@ describe('program edges', () => {
   });
 
   it('refuses registration after the program ends and allows the same person to register again after cancelling', async () => {
-    const created = await createProgram(ctx.db, actor.userId, {
+    const publisher = { userId: actor.userId, isAdmin: true };
+    const created = await createProgram(ctx.db, publisher, {
       title: 'Short workshop',
       category: 'water_sanitation',
       organizer: 'Health',
@@ -140,7 +148,7 @@ describe('program edges', () => {
     );
     expect(late).toEqual({ ok: false, reason: 'ended' });
 
-    const open = await createProgram(ctx.db, actor.userId, {
+    const open = await createProgram(ctx.db, publisher, {
       title: 'Open workshop',
       category: 'water_sanitation',
       organizer: 'Health',
@@ -152,13 +160,12 @@ describe('program edges', () => {
     expect(open.ok).toBe(true);
     if (!open.ok) return;
     expect(await registerForProgram(ctx.db, 'user_a', open.program.id)).toEqual({ ok: true });
-    const { cancelRegistration } = await import('@/core/programs/service');
     expect(await cancelRegistration(ctx.db, 'user_a', open.program.id)).toEqual({ ok: true });
     expect(await registerForProgram(ctx.db, 'user_a', open.program.id)).toEqual({ ok: true });
   });
 
   it('gives exactly three seats when six people register at once for a three-seat program', async () => {
-    const created = await createProgram(ctx.db, actor.userId, {
+    const created = await createProgram(ctx.db, { userId: actor.userId, isAdmin: true }, {
       title: 'Limited drill',
       category: 'evacuation_drill',
       organizer: 'Ward',

@@ -18,7 +18,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-const host = 'user_host';
+const host = { userId: 'user_host', isAdmin: true };
 
 function program(overrides: Record<string, string | number | null> = {}) {
   return {

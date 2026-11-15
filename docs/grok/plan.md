@@ -1,6 +1,24 @@
 # Plan (Grok owns this file)
 
-Status: **current slice is instant tab shells with list skeletons.** Missing People and Communities already load their data on the server. A tab click waits on Clerk and on Supabase before anything paints. `tests/tab-loading.test.ts` is red until the structure below exists. Do not edit that test. Do not delete demo rows. Flood status for a clicked map point stays deferred.
+Status: **current slice is the Dashboard flood desk.** No dashboard model code exists yet. The tests below are red on purpose. Do not edit them. Do not send a real SMS, call, or alert. Do not change `src/proxy.ts` or `tests/clerk-gate.test.ts`. The full formula contract is `docs/grok/brief-dashboard.md`.
+
+## Feature: dashboard flood desk
+
+Tests, all expected red until the modules exist:
+
+- `tests/model-gumbel.test.ts` — yearly maxima (drop a year with fewer than 300 valid days), L-moments, Gumbel fit, quantile and return period as inverses, 40-year cap, Weibull rank.
+- `tests/model-severity.test.ts` — normal below 2, watch from 2, warning from 5, severe from 20. Fewer than 10 maxima is `unknown` and `returnPeriod` is null.
+- `tests/model-rise.test.ts` — zero at or below bankfull, about 2.48 m at five times bankfull, zero when the input is not usable.
+- `tests/model-terrarium.test.ts` — Terrarium decode, Kathmandu tile `z12 x=3018 y=1719`, ground resolution, 4 to 9 tiles for a 10 km window.
+- `tests/model-hand.test.ts` — V valley depths `[0, 1, 3, 1, 0]` at a 3 m rise, a pit behind a ridge stays dry until the rise clears it, no stream stays dry, one column, flat plain, seed is the largest stream in range.
+- `tests/model-flood.test.ts` — Open-Meteo URL, 9 neighbour cells with the click first, null discharge kept, API error thrown, largest mean cell, nearest tie, empty river is null.
+- `tests/api-flood.test.ts` — signed out is 401, bad coordinates are 400, a signed-in flood response includes attribution with Open-Meteo and GloFAS, `/api/dem` allows zoom 10–14 only.
+- `tests/alerts.test.ts` — simulated copy starts with `SIMULATION ONLY:`, plain ASCII, no WEA/NWS wording, unknown history says "not enough". Only an admin advances `detected → verified → notified → acknowledged`. A real alert cannot be notified.
+- `tests/alerts-schema.test.ts` — `flood_alerts` and `flood_alert_events` in the schema.
+- `tests/replay.test.ts` — `validateReplay` plus `public/geo/nepal-2026/replay.json`.
+- `tests/dashboard-page.test.ts` — page shell uses Suspense and `ListSkeleton`, the map loader is client-only, Live / Replay modes, LIVE / REPLAY / SIMULATION badges, and the six disclaimers.
+
+Assumptions locked by those tests: every year with fewer than 300 valid days is dropped. Neighbour cells are ±0.05 degrees. A signed-out data route returns 401.
 
 ## Feature: instant tab content
 
