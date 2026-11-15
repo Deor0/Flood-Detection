@@ -1,9 +1,11 @@
+import { Show } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { Suspense } from 'react';
 import { PROGRAM_CATEGORIES } from '@/db/schema';
 import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { ListSkeleton } from '@/components/ListSkeleton';
+import { SignInLink } from '@/components/SignInLink';
 import styles from '@/components/page-ui.module.css';
 import { ProgramResults } from './ProgramResults';
 import { appTimeZone } from '@/lib/time';
@@ -43,13 +45,25 @@ export default async function CommunitiesPage({
         </div>
       </div>
 
-      <details className={styles.panel}>
-        <summary>+ Host / Register Program</summary>
-        <p className={styles.lede}>
-          New programs are submitted for review and listed once an admin approves them.
-        </p>
-        <HostForm timeZone={appTimeZone()} />
-      </details>
+      {/* Signed-out visitors can browse programs; hosting one needs an account. */}
+      <Suspense fallback={null}>
+        <Show
+          when="signed-in"
+          fallback={
+            <div className={styles.actions}>
+              <SignInLink to="host a program" />
+            </div>
+          }
+        >
+          <details className={styles.panel}>
+            <summary>+ Host / Register Program</summary>
+            <p className={styles.lede}>
+              New programs are submitted for review and listed once an admin approves them.
+            </p>
+            <HostForm timeZone={appTimeZone()} />
+          </details>
+        </Show>
+      </Suspense>
 
       <Suspense fallback={<ListSkeleton />}>
         <MyPrograms />

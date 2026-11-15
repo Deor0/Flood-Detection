@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
+import { signInHref } from './SignInLink';
 import styles from './Nav.module.css';
 
 const TABS = [
@@ -13,10 +14,23 @@ const TABS = [
   { href: '/sms-simulator', label: 'SMS Simulator' },
 ] as const;
 
-/** Top bar for signed-in pages. The profile menu (UserButton) includes sign out. */
-export function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
+/**
+ * Top bar. Signed in: the profile menu (UserButton) includes sign out. Signed out: the public tabs
+ * and a "Sign in" link that returns here afterwards (hidden on Clerk's own sign-in/up pages).
+ */
+export function Nav({
+  isAdmin = false,
+  signedIn = true,
+}: {
+  isAdmin?: boolean;
+  signedIn?: boolean;
+}) {
   const pathname = usePathname() ?? '';
-  const tabs = isAdmin ? [...TABS, { href: '/admin', label: 'Admin' }] : TABS;
+  if (!signedIn && (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
+    return null;
+  }
+  const visible = signedIn ? TABS : TABS.filter((tab) => tab.href !== '/sms-simulator');
+  const tabs = isAdmin ? [...visible, { href: '/admin', label: 'Admin' }] : visible;
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>
@@ -39,7 +53,13 @@ export function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
           })}
         </nav>
         <div className={styles.profile}>
-          <UserButton />
+          {signedIn ? (
+            <UserButton />
+          ) : (
+            <Link href={signInHref(pathname)} className={styles.tab}>
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </header>

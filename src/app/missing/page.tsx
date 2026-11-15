@@ -1,6 +1,8 @@
+import { Show } from '@clerk/nextjs';
 import { Search } from 'lucide-react';
 import { Suspense } from 'react';
 import { ListSkeleton } from '@/components/ListSkeleton';
+import { SignInLink } from '@/components/SignInLink';
 import styles from '@/components/page-ui.module.css';
 import { MissingResults } from './MissingResults';
 import { ReportForm } from './MissingForms';
@@ -45,10 +47,22 @@ export default async function MissingPage({
         </button>
       </form>
 
-      <details className={styles.panel}>
-        <summary>+ Report a missing person</summary>
-        <ReportForm />
-      </details>
+      {/* Signed-out visitors can read the registry; filing a report needs an account. */}
+      <Suspense fallback={null}>
+        <Show
+          when="signed-in"
+          fallback={
+            <div className={styles.actions}>
+              <SignInLink to="report a missing person" />
+            </div>
+          }
+        >
+          <details className={styles.panel}>
+            <summary>+ Report a missing person</summary>
+            <ReportForm />
+          </details>
+        </Show>
+      </Suspense>
 
       {/* Header, search and the report form paint at once; only this list waits on the database. */}
       <Suspense key={q} fallback={<ListSkeleton />}>

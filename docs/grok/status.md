@@ -6,6 +6,20 @@
 - Production Clerk also has "verify email at sign-up" on, and the form has no code-entry step. Either turn it off in Clerk or add a verification step (needs a test first).
 - **Grok:** sign-up/sign-in tests could pin "no phone field, email-only identifier".
 
+## 2026-11-15 · Claude (built: public read, login only to change data)
+
+The user asked for this to be built now, before Grok's tests exist. **Approved test exception (user, once):** Claude updated `tests/clerk-gate.test.ts` to the new public list. No other test was touched.
+
+- `src/proxy.ts` public list now also has `/` (exact root only), `/find(.*)`, `/guide(.*)`, `/nepal(.*)`, `/dashboard(.*)`, `/missing(.*)`, `/communities(.*)`, `/api/flood(.*)`, `/api/dem(.*)`. `/admin(.*)` and `/sms-simulator(.*)` stay protected. `clerkMiddleware` still runs everywhere, so `auth()` works on public pages. Checked against the real `createRouteMatcher`: `/` matches only `/`, not `/admin`.
+- `tests/clerk-gate.test.ts`: its mock matcher now treats a pattern without `(.*)` as exact, like Clerk does. Before, `/` would have matched every path. Public paths include the new ones; the protected test uses `/admin`, `/admin/users`, `/admin/missing`, `/sms-simulator`.
+- Signed-out visitors get "Sign in to ..." links to `/sign-in?redirect_url=<path>` (`src/components/SignInLink.tsx`) instead of: report a missing person, mark found / suggest an edit (`MissingResults` does not render `PersonActions` at all, so no edit-form values reach the browser), host a program, register. "Your programs" already returned nothing when signed out. The admin alert buttons were already admin-only.
+- Nav: signed-out visitors now see the nav with a "Sign in" link instead of `UserButton`, without the SMS Simulator tab. The nav is hidden on `/sign-in` and `/sign-up` when signed out.
+- Privacy when signed out: contact and found note are stripped by `redactForViewer`. Attendee lists are admin-only (`listAttendees`). Only `approved` programs are listed (`listPrograms`). On `/missing`, anyone under 18 is shown as initials to signed-out visitors. **Gap:** signed-in non-owners still see minors' full names on `/missing`. Should they also see initials?
+- Server actions checked: `missing/actions.ts`, `communities/actions.ts`, `sms-simulator/actions.ts` return the sign-in message when there is no `userId`. The admin and dashboard actions use `requireAdmin()`.
+- **Not done (blocked by a test):** `/api/flood` and `/api/dem` still return 401 to signed-out callers, because `tests/api-flood.test.ts` pins that. So signed-out visitors on `/dashboard` see the map, but live lookups fail with "Sign in to look up live river data." A note on the page points them to sign in or to `/demo`. To make the flood desk fully public, Grok or the user needs to change those two assertions; then Claude removes the `userId` checks in the routes.
+- Results: `pnpm test` 84/86 (only the two known test bugs fail). Lint: 0 errors. Build ok; every page route is still ƒ (dynamic). Not checked in a browser.
+- **Grok, tests to add:** a signed-out render of `/missing` and `/communities` shows "Sign in to" links with `redirect_url` and no forms; a signed-out `MissingResults` shows minors as initials and sends no contact; a signed-out call to each write action writes nothing; `Nav` with `signedIn: false` shows "Sign in" and no SMS Simulator; the public/flood API decision above.
+
 ## 2026-11-15 · Claude (fix: Clerk auth() error on 404s for skipped static paths)
 
 - Production logged "auth() was called but Clerk can't detect usage of clerkMiddleware()": browsers ask for `/favicon.ico`, the proxy matcher skips `.ico`, the 404 renders in the root layout, and `AdminNavGate` calls `getViewer()` → `auth()`.

@@ -14,9 +14,11 @@ vi.mock('@clerk/nextjs/server', () => ({
     publicPatterns.push(patterns);
     return (req: { nextUrl: { pathname: string } }) => {
       const path = req.nextUrl.pathname;
+      // Like Clerk's path-to-regexp matcher: `x(.*)` matches x and anything after it; a pattern
+      // without `(.*)` (such as `/`) matches that exact path only.
       return patterns.some((pattern) => {
-        const prefix = pattern.replace(/\(\.\*\)$/, '');
-        return path === prefix || path.startsWith(prefix);
+        if (!pattern.endsWith('(.*)')) return path === pattern;
+        return path.startsWith(pattern.slice(0, -'(.*)'.length));
       });
     };
   },
@@ -41,8 +43,17 @@ beforeEach(() => {
 });
 
 describe('Clerk session gate', () => {
-  it('keeps sign-in, sign-up, the SMS webhook, and geo files public', async () => {
+  it('keeps the read-only pages, sign-in, sign-up, the SMS webhook, and geo files public', async () => {
     expect(publicPatterns[0]).toEqual([
+      '/',
+      '/find(.*)',
+      '/guide(.*)',
+      '/nepal(.*)',
+      '/dashboard(.*)',
+      '/missing(.*)',
+      '/communities(.*)',
+      '/api/flood(.*)',
+      '/api/dem(.*)',
       '/sign-in(.*)',
       '/sign-up(.*)',
       '/api/sms(.*)',
@@ -51,15 +62,32 @@ describe('Clerk session gate', () => {
       '/demo(.*)',
     ]);
 
-    for (const path of ['/sign-in', '/sign-in/factor-one', '/sign-up', '/api/sms', '/api/postsms', '/geo/place.json', '/demo']) {
+    for (const path of [
+      '/',
+      '/find',
+      '/guide',
+      '/nepal',
+      '/dashboard',
+      '/missing',
+      '/communities',
+      '/api/flood',
+      '/api/dem',
+      '/sign-in',
+      '/sign-in/factor-one',
+      '/sign-up',
+      '/api/sms',
+      '/api/postsms',
+      '/geo/place.json',
+      '/demo',
+    ]) {
       protect.mockClear();
       await proxy(incoming(path));
       expect(protect, path).not.toHaveBeenCalled();
     }
   });
 
-  it('requires a Clerk session for the app pages', async () => {
-    for (const path of ['/', '/dashboard', '/missing', '/communities']) {
+  it('requires a Clerk session for admin and the SMS simulator', async () => {
+    for (const path of ['/admin', '/admin/users', '/admin/missing', '/sms-simulator']) {
       protect.mockClear();
       await proxy(incoming(path));
       expect(protect, path).toHaveBeenCalledOnce();

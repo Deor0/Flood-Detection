@@ -1,11 +1,13 @@
 import { Check } from 'lucide-react';
 import { getDb } from '@/db';
 import { lastFirst, publicId } from '@/core/missing/names';
+import { initials } from '@/core/missing/publicSearch';
 import { redactForViewer, searchMissing } from '@/core/missing/service';
 import { canEditMissingDirectly } from '@/core/permissions';
 import { getViewer } from '@/lib/roles';
 import styles from '@/components/page-ui.module.css';
 import { timeAgo } from '@/lib/time';
+import { SignInLink } from '@/components/SignInLink';
 import { PersonActions } from './MissingForms';
 
 /** The result list. This is the only part of the page that waits on the database. */
@@ -16,10 +18,16 @@ export async function MissingResults({ q }: { q: string }) {
     [];
   try {
     // Contact is stripped here on the server, before anything reaches the client component.
-    people = (await searchMissing(getDb(), q)).map((p) => ({
-      ...redactForViewer(p, actor),
-      canEditDirectly: canEditMissingDirectly(actor, p),
-    }));
+    // Signed-out visitors also see anyone under 18 as initials only, as on the public /find page.
+    people = (await searchMissing(getDb(), q)).map((p) => {
+      const shown = redactForViewer(p, actor);
+      const minor = p.age !== null && p.age < 18;
+      return {
+        ...shown,
+        name: !viewer.userId && minor ? initials(p.name) : shown.name,
+        canEditDirectly: canEditMissingDirectly(actor, p),
+      };
+    });
   } catch (err) {
     console.error('missing page load failed', err);
     return (
@@ -40,7 +48,9 @@ export async function MissingResults({ q }: { q: string }) {
         <div className={styles.empty}>
           {q
             ? 'No one matches that name.'
-            : 'No records yet. Use “Report a missing person” to add one.'}
+            : viewer.userId
+              ? 'No records yet. Use “Report a missing person” to add one.'
+              : 'No records yet.'}
         </div>
       ) : (
         <ul className={styles.list}>
@@ -67,7 +77,9 @@ export async function MissingResults({ q }: { q: string }) {
                     )}
                   </span>
                   <div>
-                    <h2 className={styles.personName}>{lastFirst(p.name)}</h2>
+                    <h2 className={styles.personName}>
+                      {!viewer.userId && p.age !== null && p.age < 18 ? p.name : lastFirst(p.name)}
+                    </h2>
                     <p className={styles.personMeta}>
                       {p.age !== null && <>Age: {p.age} • </>}ID: #{publicId(p.publicNumber)}
                     </p>
@@ -86,19 +98,31 @@ export async function MissingResults({ q }: { q: string }) {
                   </span>
                   {p.contact && <span className={styles.contactLine}>Contact: {p.contact}</span>}
                 </div>
-                <PersonActions
-                  id={p.id}
-                  status={p.status}
-                  canEditDirectly={p.canEditDirectly}
-                  isAdmin={viewer.isAdmin}
-                  values={{
-                    name: p.name,
-                    age: p.age,
-                    lastSeenLocation: p.lastSeenLocation,
-                    notes: p.notes,
-                    contact: p.contact,
-                  }}
-                />
+                {/* Signed out: no edit forms, so no record details are sent to the browser for them. */}
+                {!viewer.userId ? (
+                  <div className={styles.actions}>
+                    <SignInLink
+                      small
+                      to={
+                        p.status === 'missing' ? 'mark found or suggest an edit' : 'suggest an edit'
+                      }
+                    />
+                  </div>
+                ) : (
+                  <PersonActions
+                    id={p.id}
+                    status={p.status}
+                    canEditDirectly={p.canEditDirectly}
+                    isAdmin={viewer.isAdmin}
+                    values={{
+                      name: p.name,
+                      age: p.age,
+                      lastSeenLocation: p.lastSeenLocation,
+                      notes: p.notes,
+                      contact: p.contact,
+                    }}
+                  />
+                )}
               </li>
             );
           })}

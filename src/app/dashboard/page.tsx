@@ -1,5 +1,8 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { ListSkeleton } from '@/components/ListSkeleton';
+import { SignInLink } from '@/components/SignInLink';
+import ui from '@/components/page-ui.module.css';
 import { getViewer } from '@/lib/roles';
 import { FloodMapLoader } from './FloodMapLoader';
 import { Disclaimers } from './Disclaimers';
@@ -26,5 +29,16 @@ export default function Page() {
 
 async function Desk() {
   const viewer = await getViewer();
-  return <FloodMapLoader isAdmin={viewer.isAdmin} />;
+  return (
+    <>
+      {/* /api/flood and /api/dem still answer 401 to signed-out callers (pinned by tests). */}
+      {!viewer.userId && (
+        <p className={ui.lede}>
+          Live river lookups need an account. <SignInLink small to="look up live river data" /> or
+          open the <Link href="/demo">saved demo</Link>, which works without one.
+        </p>
+      )}
+      <FloodMapLoader isAdmin={viewer.isAdmin} />
+    </>
+  );
 }

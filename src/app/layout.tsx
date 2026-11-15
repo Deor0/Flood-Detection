@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ClerkProvider appearance={clerkAppearance}>
           <Suspense>
-            <Show when="signed-in">
+            <Show when="signed-in" fallback={<Nav signedIn={false} />}>
               <Suspense fallback={<Nav />}>
                 <AdminNavGate />
               </Suspense>

@@ -6,6 +6,7 @@ import { CATEGORY_BADGES } from '@/core/programs/categories';
 import { listPrograms } from '@/core/programs/service';
 import styles from '@/components/page-ui.module.css';
 import { appTimeZone } from '@/lib/time';
+import { SignInLink } from '@/components/SignInLink';
 import { RegisterButton } from './ProgramForms';
 
 const zone = appTimeZone();
@@ -49,7 +50,9 @@ export async function ProgramResults({ q, category }: { q: string; category?: Pr
       <div className={styles.empty}>
         {q || category
           ? 'No upcoming programs match your search.'
-          : 'No upcoming programs yet. Use “Host / Register Program” to list one.'}
+          : userId
+            ? 'No upcoming programs yet. Use “Host / Register Program” to list one.'
+            : 'No upcoming programs yet.'}
       </div>
     );
   }
@@ -95,7 +98,11 @@ export async function ProgramResults({ q, category }: { q: string; category?: Pr
               )}
             </div>
             <div className={styles.programSide}>
-              <RegisterButton programId={p.id} isRegistered={p.isRegistered} isFull={isFull} />
+              {userId ? (
+                <RegisterButton programId={p.id} isRegistered={p.isRegistered} isFull={isFull} />
+              ) : (
+                !isFull && <SignInLink small to="register" />
+              )}
             </div>
           </li>
         );
