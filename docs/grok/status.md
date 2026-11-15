@@ -1,5 +1,36 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (open items to pick up later; `main` at `4916de0`)
+
+What landed on `main`: dashboard simulation (Manning rating depth, scenarios, A/B compare, forecast band), public `/demo` with saved data for 5 rivers, `flood_climatology` cache (migration `0003`), Ocean Blue palette, and GEOGloWS as the primary river source with Open-Meteo as the fallback.
+
+**Blocked on a decision**
+1. **Helpline route is unsafe to ship.** `src/app/api/postsms/`, `src/core/helpline/`, `docs/helpline-api.md` and their edits to `src/proxy.ts` and `tests/clerk-gate.test.ts` are uncommitted in the working tree (another session's work). `/api/postsms` is public, does not verify the caller (no shared secret or signature), and writes missing-person reports through `reportMissing`. Add a secret check before it goes to `main`. The same route was reverted from `main` once already (`7d48b4f`).
+2. **Migrations not applied to Supabase:** `0002` (flood alert tables; the admin alert buttons need it) and `0003` (`flood_climatology`; without it the cache is in memory only). Apply with `pnpm db:migrate` after approval.
+3. **Public pages:** `/`, `/find`, `/guide`, `/nepal` still need sign-in. Opening them means adding them to `src/proxy.ts` and to `tests/clerk-gate.test.ts`.
+
+**Red tests (2 of 84)**
+- `tests/admin-edits.test.ts` "stops one user at 10 pending suggestions": test bug, the shared `reporter` hits the 10 reports/24 h cap on the 11th report. Give the test its own reporter.
+- `tests/api-flood.test.ts` "returns severity, the snapped cell, and the attribution": its fetch mock returns one shared Open-Meteo reply, which the GEOGloWS lookup now reads first. Mock GEOGloWS (`getriverid`, `retrospectivedaily`, `forecaststats`) or route by URL.
+- `tests/clerk-gate.test.ts` passes only with the uncommitted helpline edit, which also lists `/demo(.*)`. If the helpline is dropped, keep the `/demo(.*)` part of that edit.
+
+**Data and demo**
+- Rhine and Indus demo data are from the older nearest-reach rule. Refresh with `node scripts/build-demo.mjs --force` (takes several minutes; space runs out, both services rate-limit bursts).
+- `public/geo/demo/__tiles__/` is the builder's download cache, left behind by a stopped run. Delete it or add it to `.gitignore`.
+- GEOGloWS limits: `getriverid` gives no reach position (snap distance is to the search point, not the river); the hosted `returnperiods` endpoint returned 500, so return periods are our own Gumbel fit; a first click on a new river takes 20 to 60 s; values are simulated, not gauged. The Bagmati reach shows sharp one-day monsoon spikes (for example 68 to 461 to 63 m3/s in July 1990) that were not checked against a gauge.
+- Open-Meteo hit its daily limit for this IP on 2026-11-15; it is only the fallback now.
+- "More than 1,400 dead" for Nepal still has no official source (labelled "to be confirmed" on `/nepal`).
+
+**Not checked**
+- Nothing in this round was looked at in a browser: home page palette, full-width map, scenario controls, compare swipe, `/demo`, `/guide` video.
+- Live clicks on open sea and a small stream through the GEOGloWS path.
+
+**Not built (ideas, in rough value order)**
+- Dynamic flood solver for moving water and dam-break waves (MIT ports: `deluge-flood-sim`, `cheia`).
+- Exposed people and buildings (WorldPop or GHSL, OSM buildings) and nearest shelters (Overpass).
+- EMSR927 footprint on the Nepal replay.
+- Better terrain from OpenTopography COP30 (`OPENTOPOGRAPHY_API_KEY` in `.env`, set by the user) and official GloFAS return-period thresholds from Copernicus CDS (needs a one-off Python preprocessing step). The user has both accounts.
+
 ## 2026-11-14 · Grok
 
 - Approved slice: Vapi voice gateway for `check_missing_person` and `report_missing_person` only. No flood-status or shelter tool.
