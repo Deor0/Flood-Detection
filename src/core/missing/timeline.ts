@@ -15,9 +15,9 @@ const LABELS: Record<string, string> = {
   edited: 'Details updated',
   edit_requested: 'Correction suggested',
   edit_rejected: 'Suggestion reviewed and declined',
-  found_claimed: 'Reported safe by a volunteer — waiting for confirmation',
-  found: 'Marked found — home (Ithaca)',
-  reopened: 'Re-opened — still at sea',
+  found_claimed: 'Reported found by a volunteer — waiting for confirmation',
+  found: 'Marked found',
+  reopened: 'Re-opened as missing',
 };
 
 /** Oldest first, like reading the record from the day it was filed. */

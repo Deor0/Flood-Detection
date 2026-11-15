@@ -241,8 +241,8 @@ describe('status filter and public timeline', () => {
     expect(timeline[0].label).toBe('Reported missing');
     expect(timeline.map((t) => t.label)).toEqual(
       expect.arrayContaining([
-        'Reported safe by a volunteer — waiting for confirmation',
-        'Marked found — home (Ithaca)',
+        'Reported found by a volunteer — waiting for confirmation',
+        'Marked found',
         'Safe report confirmed',
       ]),
     );

@@ -11,7 +11,7 @@ export const HELPLINE_KICKER = 'The Beacon Line';
 export const VOICE_AGENT_NAME = 'Mentor';
 export const HELPLINE_PATH = '/sms-simulator';
 
-/** The Vapi voice line, as it should be dialled. null shows "Number coming soon". */
+/** The Vapi voice line (live). Set the number here to show it as a tap-to-call link. */
 export const VOICE_NUMBER: string | null = null;
 
 /** The SMS line is a pilot: it is live, but not yet open to every phone, so no number is published. */

@@ -172,7 +172,7 @@ export function PersonActions({
             onClick={() => toggle('found')}
           >
             <UserCheck size={14} aria-hidden="true" />{' '}
-            {!canEditDirectly ? 'Report safe' : claimed ? 'Confirm found' : 'Mark as found'}
+            {!canEditDirectly ? 'Report found' : claimed ? 'Confirm found' : 'Mark as found'}
           </button>
         )}
         <button

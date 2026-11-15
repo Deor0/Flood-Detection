@@ -35,7 +35,7 @@ export function HelplineNote({ heading = 'No internet? Call or text.' }: { headi
                   {VOICE_NUMBER}
                 </a>
               ) : (
-                'Number coming soon'
+                'Live now'
               )}
               . Tell {VOICE_AGENT_NAME}, the voice agent, who you are looking for, or who is
               missing.

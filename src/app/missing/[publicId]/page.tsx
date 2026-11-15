@@ -69,7 +69,7 @@ export default async function MissingRecordPage({
                 : ''}
             </p>
           </div>
-          <StatusBadge status={row.status} claimed={claimed} />
+          <StatusBadge status={row.status} />
         </div>
         {signedIn && (
           <div className={styles.personBody}>

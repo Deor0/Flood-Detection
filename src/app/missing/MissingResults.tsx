@@ -233,7 +233,7 @@ export async function MissingResults({ q, status }: { q: string; status?: Status
                       {p.age !== null && <>Age: {p.age} • </>}ID: #{id}
                     </p>
                   </div>
-                  <StatusBadge status={p.status} claimed={p.claimed} />
+                  <StatusBadge status={p.status} />
                 </div>
                 <div className={styles.personBody}>
                   <span>

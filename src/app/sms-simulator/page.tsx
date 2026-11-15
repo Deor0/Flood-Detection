@@ -73,9 +73,7 @@ export default async function HelplinePage() {
             </span>
             <h2>Call the voice line</h2>
           </div>
-          <span className={`${styles.status} ${VOICE_NUMBER ? styles.statusLive : ''}`}>
-            {VOICE_NUMBER ? 'Live' : 'Number coming soon'}
-          </span>
+          <span className={`${styles.status} ${styles.statusLive}`}>Live</span>
           {VOICE_NUMBER && (
             <p className={styles.number}>
               <a href={telHref(VOICE_NUMBER)}>{VOICE_NUMBER}</a>

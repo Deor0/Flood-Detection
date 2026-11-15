@@ -105,9 +105,9 @@ export async function markFoundAction(
       return {
         ok: true,
         message:
-          'Thank you. The record now shows “Reported safe — confirming” until the reporter or an admin confirms it.',
+          'Thank you. The reporter or an admin will confirm it; until then the record stays missing.',
       };
-    if (result.ok) return { ok: true, message: 'Marked as found. Home (Ithaca).' };
+    if (result.ok) return { ok: true, message: 'Marked as found.' };
     if (result.reason === 'forbidden') return { message: FORBIDDEN };
     if (result.reason === 'rate_limited')
       return {
