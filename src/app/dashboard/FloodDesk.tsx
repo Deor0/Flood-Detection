@@ -498,8 +498,10 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                         startedAt={engineState.startedAt}
                         error={engineState.error}
                         showRun={showRun}
+                        belowTypical={q <= typicalFlow(data.series?.discharge)}
                         onRun={runEngine}
                         onShowRun={setShowRun}
+                        onTryFlood={() => patchScenario({ basis: 'return', T: 20 })}
                       />
                     )}
                     {data.series && (

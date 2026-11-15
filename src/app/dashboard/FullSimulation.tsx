@@ -12,8 +12,12 @@ type Props = {
   error: string;
   /** Whether the map shows the SFINCS run (true) or the quick estimate (false). */
   showRun: boolean;
+  /** The chosen flow is at or below the river's typical level, so there is nothing to flood. */
+  belowTypical: boolean;
   onRun: () => void;
   onShowRun: (show: boolean) => void;
+  /** Switch the scenario to a 20-year flood. */
+  onTryFlood: () => void;
 };
 
 const fmt = (v: number) => (v < 10 ? v.toFixed(1) : Math.round(v).toLocaleString('en'));
@@ -25,8 +29,10 @@ export function FullSimulation({
   startedAt,
   error,
   showRun,
+  belowTypical,
   onRun,
   onShowRun,
+  onTryFlood,
 }: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -46,9 +52,15 @@ export function FullSimulation({
         move across the ground instead of filling it level. It can take 1 to 3 minutes.
       </p>
       <div className={styles.fullSimRow}>
-        <button type="button" className={styles.try} onClick={onRun} disabled={running}>
-          {running ? `Running SFINCS… ${elapsed}s` : result ? 'Run again' : 'Run full simulation'}
-        </button>
+        {belowTypical && !running ? (
+          <button type="button" className={styles.try} onClick={onTryFlood}>
+            Try a 20-year flood
+          </button>
+        ) : (
+          <button type="button" className={styles.try} onClick={onRun} disabled={running}>
+            {running ? `Running SFINCS… ${elapsed}s` : result ? 'Run again' : 'Run full simulation'}
+          </button>
+        )}
         {result && (
           <div role="group" aria-label="Map layer" className={styles.modes}>
             <button
@@ -70,7 +82,17 @@ export function FullSimulation({
           </div>
         )}
       </div>
+      {belowTypical && !running && (
+        <p className={styles.warnLine}>
+          This flow is at or below this river&apos;s usual level, so the model has no extra water to
+          spread and the map stays empty. Pick a bigger scenario (a forecast peak, a return period
+          or a higher multiplier) to see flooding.
+        </p>
+      )}
       {error && <p className={styles.warnLine}>{error}</p>}
+      {result && result.stats.floodedKm2 === 0 && (
+        <p className={styles.warnLine}>No water spread outside the river at this flow.</p>
+      )}
       {result && (
         <>
           <dl className={styles.facts}>
