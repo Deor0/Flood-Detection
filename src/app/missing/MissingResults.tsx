@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleHelp } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { getDb } from '@/db';
 import { lastFirst, publicId } from '@/core/missing/names';
 import { redactForViewer, searchMissing } from '@/core/missing/service';
@@ -56,8 +56,15 @@ export async function MissingResults({ q }: { q: string }) {
             return (
               <li key={p.id} className={styles.person}>
                 <div className={styles.personTop}>
-                  <span className={styles.statusIcon} aria-hidden="true">
-                    {found ? <CheckCircle2 size={20} /> : <CircleHelp size={20} />}
+                  <span
+                    className={`${styles.statusIcon} ${found ? styles.statusFound : styles.statusMissing}`}
+                    aria-hidden="true"
+                  >
+                    {found ? (
+                      <Check size={20} strokeWidth={2.5} />
+                    ) : (
+                      <span style={{ fontWeight: 800, fontSize: '1.1rem', lineHeight: 1 }}>?</span>
+                    )}
                   </span>
                   <div>
                     <h2 className={styles.personName}>{lastFirst(p.name)}</h2>
@@ -65,7 +72,11 @@ export async function MissingResults({ q }: { q: string }) {
                       {p.age !== null && <>Age: {p.age} • </>}ID: #{publicId(p.publicNumber)}
                     </p>
                   </div>
-                  <span className={styles.badge}>{found ? 'FOUND' : 'UNACCOUNTED / MISSING'}</span>
+                  <span
+                    className={`${styles.badge} ${found ? styles.badgeFound : styles.badgeMissing}`}
+                  >
+                    {found ? 'FOUND' : 'UNACCOUNTED / MISSING'}
+                  </span>
                 </div>
                 <div className={styles.personBody}>
                   <span>

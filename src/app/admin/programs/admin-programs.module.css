@@ -14,20 +14,20 @@
 
 .feedItem {
   padding: 0.7rem 0.9rem;
-  background: #fff;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
   font-size: 0.85rem;
 }
 
 .from {
-  color: var(--danger);
+  color: var(--danger-ink);
 }
 
 .to {
-  color: var(--ok);
+  color: var(--ok-ink);
 }
 
 .muted {
-  color: var(--muted);
+  color: var(--ink-soft);
 }

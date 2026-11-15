@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, type LucideIcon } from 'lucide-react';
 import styles from './auth.module.css';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -83,8 +83,8 @@ export function SubmitButton({
   const busy = status === 'loading' || status === 'success';
   return (
     <button type="submit" className={styles.primary} disabled={busy} aria-busy={busy}>
-      {status === 'loading' && <Loader2 size={16} className={styles.spin} aria-hidden="true" />}
-      {status === 'success' && <CheckCircle2 size={16} aria-hidden="true" />}
+      {status === 'loading' && <span className={styles.spinner} aria-hidden="true" />}
+      {status === 'success' && <Check size={16} aria-hidden="true" />}
       <span>{busy ? busyLabel : children}</span>
       {!busy && <ArrowRight size={16} aria-hidden="true" />}
     </button>

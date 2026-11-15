@@ -1,21 +1,8 @@
 .shell {
-  --ink: #14172b;
-  --muted: #5d6178;
-  --input: #f0f1fc;
-  --line: #e3e4f2;
-  --danger: #b42318;
-  --ok: #067647;
-  --focus: #4338ca;
   width: 100%;
   max-width: 28rem;
   color: var(--ink);
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-sans);
 }
 
 .wide {
@@ -24,12 +11,12 @@
 
 .card {
   width: 100%;
-  background: #fff;
+  background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-card);
   box-shadow:
-    0 1px 2px rgb(20 23 43 / 0.04),
-    0 8px 24px rgb(20 23 43 / 0.05);
+    0 1px 2px rgb(13 43 56 / 0.06),
+    0 8px 24px rgb(13 43 56 / 0.08);
   padding: 2rem;
 }
 
@@ -44,7 +31,7 @@
 
 .subtitle {
   margin: 0.5rem 0 1.5rem;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.9rem;
 }
 
@@ -61,8 +48,8 @@
   display: inline-block;
   margin-bottom: 0.75rem;
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  background: var(--input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
   color: var(--focus);
   font-size: 0.65rem;
   font-weight: 700;
@@ -104,9 +91,9 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0 0.75rem;
-  background: var(--input);
+  background: var(--surface);
   border: 1.5px solid transparent;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
   transition:
     border-color 0.15s,
     background 0.15s;
@@ -114,7 +101,7 @@
 
 .inputWrap:focus-within {
   border-color: var(--focus);
-  background: #fff;
+  background: var(--paper);
 }
 
 .inputInvalid {
@@ -123,7 +110,7 @@
 
 .inputIcon {
   flex: none;
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 
 .input {
@@ -139,7 +126,7 @@
 }
 
 .input::placeholder {
-  color: #9a9db5;
+  color: var(--placeholder);
 }
 
 .iconButton {
@@ -147,9 +134,9 @@
   place-items: center;
   padding: 0.35rem;
   border: 0;
-  border-radius: 0.35rem;
+  border-radius: var(--radius-control);
   background: transparent;
-  color: var(--muted);
+  color: var(--ink-soft);
   cursor: pointer;
 }
 
@@ -165,9 +152,9 @@
   width: 100%;
   padding: 0.95rem 1rem;
   border: 0;
-  border-radius: 0.5rem;
-  background: #0b0c10;
-  color: #fff;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--on-primary);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 700;
@@ -178,7 +165,7 @@
 }
 
 .primary:hover:not(:disabled) {
-  background: #23252d;
+  background: var(--primary-hover);
 }
 
 .primary:disabled {
@@ -204,14 +191,14 @@
 
 .note {
   margin: -0.4rem 0 0;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.75rem;
 }
 
 .switch {
   margin: 1.25rem 0 0;
   text-align: center;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.82rem;
 }
 
@@ -229,7 +216,7 @@
   align-items: flex-start;
   font-size: 0.8rem;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--ink-soft);
   cursor: pointer;
 }
 
@@ -238,22 +225,22 @@
   width: 1.05rem;
   height: 1.05rem;
   margin-top: 0.15rem;
-  accent-color: #0b0c10;
+  accent-color: var(--primary);
 }
 
 .error {
   margin: 0.4rem 0 0;
-  color: var(--danger);
+  color: var(--danger-ink);
   font-size: 0.78rem;
 }
 
 .banner {
   margin: 0;
   padding: 0.7rem 0.9rem;
-  border-radius: 0.5rem;
-  background: #fef3f2;
-  border: 1px solid #fecdca;
-  color: var(--danger);
+  border-radius: var(--radius-control);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
   font-size: 0.82rem;
 }
 
@@ -272,15 +259,21 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  background: var(--input);
-  color: var(--muted);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink-soft);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.1em;
 }
 
-.spin {
+/* Square loading spinner (nothing circular in this UI). */
+.spinner {
+  display: inline-block;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
   animation: spin 0.9s linear infinite;
 }
 
@@ -308,7 +301,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spin {
+  .spinner {
     animation: none;
   }
 }

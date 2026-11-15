@@ -1,23 +1,9 @@
 .page {
-  --ink: #14172b;
-  --muted: #5d6178;
-  --card: #f2f2fe;
-  --card-line: #e0e1f5;
-  --input: #f0f1fc;
-  --focus: #4338ca;
-  --danger: #b42318;
-  --ok: #067647;
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
   color: var(--ink);
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-sans);
 }
 
 .header {
@@ -39,7 +25,7 @@
 .lede {
   margin: 0.5rem 0 0;
   max-width: 40rem;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.95rem;
   line-height: 1.5;
 }
@@ -56,14 +42,14 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0 0.9rem;
-  background: var(--input);
+  background: var(--surface);
   border: 1.5px solid transparent;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
 }
 
 .searchBox:focus-within {
   border-color: var(--focus);
-  background: #fff;
+  background: var(--paper);
 }
 
 .searchInput {
@@ -83,10 +69,10 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.7rem 1.1rem;
-  border: 1px solid #0b0c10;
-  border-radius: 0.5rem;
-  background: #0b0c10;
-  color: #fff;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--on-primary);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
@@ -95,7 +81,7 @@
 }
 
 .button:hover:not(:disabled) {
-  background: #23252d;
+  background: var(--primary-hover);
 }
 
 .button:disabled {
@@ -104,13 +90,13 @@
 }
 
 .buttonLight {
-  background: #fff;
+  background: var(--paper);
   color: var(--ink);
-  border-color: #cfd1e6;
+  border-color: var(--line-strong);
 }
 
 .buttonLight:hover:not(:disabled) {
-  background: #f4f4fb;
+  background: var(--hover);
 }
 
 .chips {
@@ -122,9 +108,9 @@
 
 .chip {
   padding: 0.5rem 0.9rem;
-  border: 1px solid #cfd1e6;
-  border-radius: 0.4rem;
-  background: #fff;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--paper);
   color: var(--ink);
   font-size: 0.82rem;
   font-weight: 600;
@@ -132,17 +118,17 @@
 }
 
 .chipActive {
-  background: #0b0c10;
-  border-color: #0b0c10;
-  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
 }
 
 .panel {
   margin-bottom: 1.5rem;
   padding: 1rem 1.25rem;
-  background: #fff;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.75rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
 }
 
 .panel > summary {
@@ -182,9 +168,9 @@
 .input {
   width: 100%;
   padding: 0.7rem 0.8rem;
-  background: var(--input);
+  background: var(--surface);
   border: 1.5px solid transparent;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
   color: var(--ink);
   font: inherit;
   font-size: 0.92rem;
@@ -193,36 +179,36 @@
 .input:focus {
   outline: 0;
   border-color: var(--focus);
-  background: #fff;
+  background: var(--paper);
 }
 
 .invalid {
-  border-color: var(--danger);
+  border-color: var(--danger-ink);
 }
 
 .error {
   margin: 0.3rem 0 0;
-  color: var(--danger);
+  color: var(--danger-ink);
   font-size: 0.78rem;
 }
 
 .banner {
   margin: 0;
   padding: 0.6rem 0.8rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
   font-size: 0.85rem;
 }
 
 .bannerError {
-  background: #fef3f2;
-  border: 1px solid #fecdca;
-  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
 }
 
 .bannerOk {
-  background: #ecfdf3;
-  border: 1px solid #abefc6;
-  color: var(--ok);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-line);
+  color: var(--ok-ink);
 }
 
 .formActions {
@@ -234,17 +220,17 @@
 
 .count {
   margin: 0 0 0.75rem;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.85rem;
 }
 
 .empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: var(--muted);
-  background: #fff;
-  border: 1px dashed #cfd1e6;
-  border-radius: 0.75rem;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-card);
 }
 
 .list {
@@ -258,9 +244,9 @@
 /* Missing person card */
 .person {
   padding: 1rem 1.25rem;
-  background: var(--card);
-  border: 1px solid var(--card-line);
-  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
 }
 
 .personTop {
@@ -275,8 +261,8 @@
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.6rem;
-  background: #dfe3fb;
+  border-radius: var(--radius-control);
+  background: var(--surface-strong);
 }
 
 .personName {
@@ -287,15 +273,15 @@
 
 .personMeta {
   margin: 0.1rem 0 0;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.82rem;
 }
 
 .badge {
   margin-left: auto;
   padding: 0.35rem 0.7rem;
-  border-radius: 0.3rem;
-  background: #dfe3fb;
+  border-radius: var(--radius-control);
+  background: var(--surface-strong);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -309,14 +295,14 @@
   gap: 0.5rem 1.5rem;
   margin-top: 0.8rem;
   padding-top: 0.8rem;
-  border-top: 1px solid var(--card-line);
+  border-top: 1px solid var(--line);
   font-size: 0.9rem;
-  color: #2c3047;
+  color: var(--ink);
 }
 
 .contactLine {
   font-size: 0.82rem;
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 
 .actions {
@@ -329,9 +315,9 @@
 .inline {
   margin-top: 0.8rem;
   padding: 0.9rem;
-  background: #fff;
-  border: 1px solid var(--card-line);
-  border-radius: 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
 }
 
 .smallButton {
@@ -345,9 +331,9 @@
   grid-template-columns: 1fr auto;
   gap: 1rem 1.5rem;
   padding: 1.25rem;
-  background: #fff;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.75rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
 }
 
 .programTop {
@@ -359,33 +345,33 @@
 
 .type {
   padding: 0.3rem 0.6rem;
-  border-radius: 0.3rem;
-  background: #eceefc;
+  border-radius: var(--radius-control);
+  background: var(--surface-strong);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
 
 .organizer {
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.82rem;
 }
 
 .pill {
   padding: 0.2rem 0.5rem;
-  border-radius: 0.3rem;
+  border-radius: var(--radius-control);
   font-size: 0.7rem;
   font-weight: 700;
 }
 
 .pillWarn {
-  background: #fee4e2;
-  color: #912018;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
 }
 
 .pillOk {
-  background: #dcfae6;
-  color: #067647;
+  background: var(--surface-strong);
+  color: var(--ink);
 }
 
 .programTitle {
@@ -398,7 +384,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1.5rem;
-  color: #3b3f55;
+  color: var(--ink-soft);
   font-size: 0.85rem;
 }
 
@@ -422,7 +408,7 @@
 
 .registered {
   text-align: center;
-  color: var(--ok);
+  color: var(--ok-ink);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -450,7 +436,7 @@
 
 .skeletonStatus {
   margin: 0 0 0.75rem;
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: 0.85rem;
 }
 
@@ -458,15 +444,15 @@
   display: grid;
   gap: 0.75rem;
   padding: 1.25rem;
-  background: var(--card);
-  border: 1px solid var(--card-line);
-  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
 }
 
 .skeletonLine {
   height: 0.85rem;
-  border-radius: 0.3rem;
-  background: linear-gradient(90deg, #e4e6fa 25%, #eef0fd 50%, #e4e6fa 75%);
+  border-radius: var(--radius-control);
+  background: linear-gradient(90deg, #d6e0e3 25%, #edf3f4 50%, #d6e0e3 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
@@ -490,4 +476,35 @@
   .skeletonLine {
     animation: none;
   }
+}
+
+/* Record status: amber = unaccounted/missing (warning), green + check = found (resolved). */
+.badgeMissing {
+  background: var(--amber);
+  color: var(--on-amber);
+}
+
+.badgeFound {
+  background: var(--ok);
+  color: #fff;
+}
+
+.badgeFound::before {
+  content: '✓ ';
+}
+
+.statusMissing {
+  background: var(--amber);
+  color: var(--on-amber);
+}
+
+.statusFound {
+  background: var(--ok);
+  color: #fff;
+}
+
+/* Success messages always carry a check mark. */
+.bannerOk::before {
+  content: '✓ ';
+  font-weight: 700;
 }

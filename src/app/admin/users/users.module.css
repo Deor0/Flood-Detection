@@ -1,9 +1,9 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
   font-size: 0.85rem;
 }
 .wrap {
@@ -13,29 +13,29 @@
 .table td {
   text-align: left;
   padding: 0.55rem 0.7rem;
-  border-bottom: 1px solid #eeeef6;
+  border-bottom: 1px solid var(--surface-strong);
   vertical-align: top;
 }
 .table th {
-  color: #5d6178;
+  color: var(--ink-soft);
   font-weight: 600;
   white-space: nowrap;
 }
 .badge {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 99px;
+  border-radius: var(--radius-control);
   font-size: 0.72rem;
   font-weight: 700;
-  background: #eeeef6;
+  background: var(--surface-strong);
 }
 .badgeAdmin {
-  background: #14172b;
-  color: #fff;
+  background: var(--ink);
+  color: var(--on-primary);
 }
 .badgeBad {
-  background: #fde8e8;
-  color: #8a1c1c;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
 }
 .actions {
   display: grid;
@@ -43,7 +43,7 @@
 }
 .confirm summary {
   cursor: pointer;
-  color: #4338ca;
+  color: var(--ink-soft);
   font-size: 0.8rem;
 }
 .confirm form {
@@ -55,7 +55,7 @@
 }
 .confirmText {
   font-size: 0.78rem;
-  color: #8a1c1c;
+  color: var(--danger-ink);
 }
 .pager {
   display: flex;
@@ -64,9 +64,9 @@
   align-items: center;
 }
 .pager a {
-  color: #4338ca;
+  color: var(--ink-soft);
 }
 .sub {
   font-weight: 400;
-  color: #5d6178;
+  color: var(--ink-soft);
 }

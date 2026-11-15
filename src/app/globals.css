@@ -1,3 +1,53 @@
+/* Palette: Fog + Tide ink + Channel teal. Everything in the app reads these tokens. */
+:root {
+  --font-sans: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Corner radius of buttons, tabs, chips, badges, pills and inputs. 0 = sharp edges. */
+  --radius-control: 0;
+  /* Corner radius of cards, panels, tables and menus. 0 = sharp edges. */
+  --radius-card: 0;
+
+  /* Fog: page background. Tide ink: text and headings. */
+  --bg: #edf2f3;
+  --ink: #0d2b38;
+  --ink-soft: #3b5662; /* secondary text, a lighter step of the ink */
+  --muted: #7c95a0; /* decorative only: icons and dividers (too light for text) */
+  --placeholder: #4c6772; /* readable placeholder text (4.5:1) */
+
+  /* surfaces derived from Fog */
+  --paper: #ffffff; /* raised cards and menus */
+  --surface: #e2eaec; /* inputs and record cards */
+  --surface-strong: #d3dee1; /* badges, active tab, icon tiles */
+  --hover: #e9f0f1;
+  --line: #ccd9dd;
+  --line-strong: #b3c4ca;
+
+  /* Channel teal: the single action color (Search, Report, Mark as found, links, focus) */
+  --primary: #0e6f7e;
+  --primary-hover: #0a5663;
+  --on-primary: #ffffff;
+  --focus: #0e6f7e;
+
+  /* Stage amber: warnings only, always a fill with dark text (Unaccounted / Missing, pending) */
+  --amber: #f2a900;
+  --on-amber: #0d2b38;
+  --warn-bg: var(--amber);
+  --warn-ink: var(--on-amber);
+  --warn-tint: #fbe9b4; /* large callouts */
+
+  /* Washout red: failures and critical states only (errors, rejected, banned) */
+  --danger: #c23b22;
+  --danger-ink: #8e2a17; /* text on light backgrounds */
+  --danger-bg: #fae4df;
+  --danger-line: #e8b5a9;
+
+  /* Found green: resolved states, always paired with a check mark */
+  --ok: #2e7d5b;
+  --ok-ink: #1f5e43; /* text on light backgrounds */
+  --ok-bg: #e0f0e8;
+  --ok-line: #a9d3bf;
+}
+
 *,
 *::before,
 *::after {
@@ -6,15 +56,9 @@
 
 body {
   margin: 0;
-  background: #f9f7ff;
-  color: #14172b;
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
 }
 
 /* Centered frame around Clerk's sign-in and sign-up cards. */
@@ -25,7 +69,7 @@ body {
   justify-content: center;
   min-height: 100dvh;
   padding: 2rem 1rem;
-  background: #f9f7ff;
+  background: var(--bg);
 }
 
 .auth-wordmark {
@@ -33,5 +77,11 @@ body {
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.28em;
-  color: #5d6178;
+  color: var(--ink-soft);
+}
+
+/* Placeholder text everywhere uses the readable muted step. */
+::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
 }

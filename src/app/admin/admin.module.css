@@ -8,28 +8,28 @@
 }
 .subtab {
   padding: 0.4rem 0.8rem;
-  border-radius: 0.4rem;
-  color: #3b3f55;
+  border-radius: var(--radius-control);
+  color: var(--ink-soft);
   font-size: 0.85rem;
   text-decoration: none;
-  border: 1px solid #e3e4f2;
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--paper);
 }
 .subtab:hover {
-  background: #f4f4fb;
+  background: var(--hover);
 }
 .subtab:focus-visible {
-  outline: 2px solid #4338ca;
+  outline: 2px solid var(--ink-soft);
   outline-offset: 2px;
 }
 .subactive {
-  background: #14172b;
-  color: #fff;
-  border-color: #14172b;
+  background: var(--ink);
+  color: var(--on-primary);
+  border-color: var(--ink);
   font-weight: 700;
 }
 .subactive:hover {
-  background: #14172b;
+  background: var(--ink);
 }
 .cards {
   display: grid;
@@ -40,21 +40,21 @@
 .card {
   display: block;
   padding: 1rem;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.6rem;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
   color: inherit;
   text-decoration: none;
 }
 .card:hover {
-  background: #f8f8fd;
+  background: var(--surface);
 }
 .cardNum {
   font-size: 1.9rem;
   font-weight: 800;
 }
 .cardLabel {
-  color: #5d6178;
+  color: var(--ink-soft);
   font-size: 0.85rem;
 }
 .activity {
@@ -69,14 +69,14 @@
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
   padding: 0.6rem 0.8rem;
-  border: 1px solid #e3e4f2;
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--paper);
   font-size: 0.85rem;
 }
 .kind {
   font-weight: 700;
 }
 .muted {
-  color: #5d6178;
+  color: var(--ink-soft);
 }
