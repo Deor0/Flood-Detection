@@ -5,6 +5,7 @@ import { FieldError, StateBanner } from '@/components/FormBits';
 import styles from '@/components/page-ui.module.css';
 import type { FormState } from '@/app/form-state';
 import { approveProgramAction, rejectProgramAction } from './actions';
+import { ReasonPicker } from '../ReasonPicker';
 
 export function ApproveButton({ programId }: { programId: string }) {
   const [pending, start] = useTransition();
@@ -17,7 +18,7 @@ export function ApproveButton({ programId }: { programId: string }) {
         className={`${styles.button} ${styles.smallButton}`}
         onClick={() => start(async () => setState(await approveProgramAction(programId)))}
       >
-        {pending ? 'Approving…' : 'Approve'}
+        {pending ? 'Approving…' : 'Approve (weave in)'}
       </button>
       <StateBanner state={state.ok ? {} : state} />
     </>
@@ -31,15 +32,10 @@ export function RejectForm({ programId }: { programId: string }) {
   );
   return (
     <form action={action} className={styles.inline}>
-      <label htmlFor={`reject-${programId}`}>Reason for rejecting (shown to the host)</label>
-      <textarea
+      <ReasonPicker
+        kind="program"
         id={`reject-${programId}`}
-        name="reason"
-        rows={2}
-        minLength={3}
-        maxLength={500}
-        required
-        className={styles.input}
+        label="Reason for rejecting (shown to the host)"
       />
       <FieldError state={state} name="reason" />
       <div className={styles.formActions}>
@@ -48,7 +44,7 @@ export function RejectForm({ programId }: { programId: string }) {
           disabled={pending}
           className={`${styles.button} ${styles.buttonLight} ${styles.smallButton}`}
         >
-          {pending ? 'Rejecting…' : 'Reject'}
+          {pending ? 'Rejecting…' : 'Reject (unpick)'}
         </button>
         <StateBanner state={state} />
       </div>
