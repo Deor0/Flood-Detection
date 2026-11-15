@@ -21,8 +21,8 @@ type Step =
   | { kind: 'reportAge'; name: string; place: string }
   | { kind: 'ended' };
 
-const GREETING =
-  'Flood helpline. This call is a simulation. Are you looking for someone, or reporting someone missing?';
+const AGENT = 'Mentor';
+const GREETING = 'Mentor here, at the Beacon Line. Who are you seeking — or who is missing?';
 const ANYTHING_ELSE =
   'Is there anything else? You can look for someone, report someone, or hang up.';
 
@@ -31,11 +31,20 @@ function field(text: string): string {
   return text.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function intentOf(text: string): 'check' | 'report' | 'end' | null {
-  const t = text.toLowerCase();
-  if (/\b(bye|hang ?up|no(thing)?( else)?|that'?s all|done)\b/.test(t)) return 'end';
+/** Only end-of-call words: "no", "no, that's all", "thank you, bye". */
+const END_ONLY =
+  /^(?:(?:no|nope|bye|goodbye|thanks|thank you|thank|nothing else|nothing|that'?s all|that'?s it|done|i'?m done|hang ?up)(?:[\s.,!]+|$))+$/;
+
+/**
+ * What the caller wants. Report and check come first, so "No, I want to report my mother" files a
+ * report; only a bare "no", "bye", "that's all" (and the like) ends the call.
+ */
+export function intentOf(text: string): 'check' | 'report' | 'end' | null {
+  const t = text.toLowerCase().trim();
   if (/\b(report|missing|lost|can'?t find|cannot find)\b/.test(t)) return 'report';
-  if (/\b(look|looking|search|check|find|is .* (on|in) the list|status)\b/.test(t)) return 'check';
+  if (/\b(look|looking|search|seek|seeking|check|find|is .* (on|in) the list|status)\b/.test(t))
+    return 'check';
+  if (END_ONLY.test(t)) return 'end';
   return null;
 }
 
@@ -196,9 +205,13 @@ export function CallSimulator({ phone }: { phone: string }) {
       <div className={styles.banner}>Simulated call · nothing is dialed</div>
       <div className={styles.callHead}>
         <div>
-          <strong>Flood helpline</strong>
+          <strong>The Beacon Line</strong>
           <span>
-            {live ? `On call · ${minutes}` : step.kind === 'ended' ? 'Call ended' : 'Voice agent'}
+            {live
+              ? `On call with ${AGENT} · ${minutes}`
+              : step.kind === 'ended'
+                ? 'Call ended'
+                : `${AGENT}, voice agent`}
           </span>
         </div>
         {canSpeak && (
@@ -225,7 +238,8 @@ export function CallSimulator({ phone }: { phone: string }) {
         {step.kind === 'idle' && (
           <div className={styles.callStart}>
             <p className={styles.empty}>
-              Practise calling the voice agent. It can check on someone or file a report.
+              Practise calling {AGENT}, the voice agent. {AGENT} can check on someone or file a
+              report.
             </p>
             <button type="button" className={styles.callButton} onClick={start}>
               <Phone size={18} aria-hidden="true" /> Start call
@@ -234,7 +248,7 @@ export function CallSimulator({ phone }: { phone: string }) {
         )}
         {lines.map((line, i) => (
           <div key={i} className={line.who === 'caller' ? styles.mine : styles.theirs}>
-            <span className={styles.speaker}>{line.who === 'caller' ? 'You' : 'Agent'}</span>
+            <span className={styles.speaker}>{line.who === 'caller' ? 'You' : AGENT}</span>
             {line.text}
           </div>
         ))}

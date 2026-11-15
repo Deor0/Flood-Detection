@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { Phone, MessageSquareText } from 'lucide-react';
-import { HELPLINE_NAME, HELPLINE_PATH, VOICE_NUMBER, telHref } from '@/lib/helpline';
+import {
+  HELPLINE_KICKER,
+  HELPLINE_NAME,
+  HELPLINE_PATH,
+  VOICE_AGENT_NAME,
+  VOICE_NUMBER,
+  telHref,
+} from '@/lib/helpline';
 import styles from './HelplineNote.module.css';
 
 /** "No internet? Call or text" card. No state, so it never delays the page it sits on. */
@@ -8,7 +15,9 @@ export function HelplineNote({ heading = 'No internet? Call or text.' }: { headi
   return (
     <aside className={styles.note} aria-label={HELPLINE_NAME}>
       <div className={styles.head}>
-        <p className={styles.kicker}>{HELPLINE_NAME}</p>
+        <p className={styles.kicker}>
+          {HELPLINE_KICKER} · {HELPLINE_NAME}
+        </p>
         <h2 className={styles.title}>{heading}</h2>
         <p className={styles.lede}>
           Search for someone, report a missing person, or mark them found from any phone, even with
@@ -28,7 +37,8 @@ export function HelplineNote({ heading = 'No internet? Call or text.' }: { headi
               ) : (
                 'Number coming soon'
               )}
-              . Say who you are looking for, or who is missing.
+              . Tell {VOICE_AGENT_NAME}, the voice agent, who you are looking for, or who is
+              missing.
             </span>
           </div>
         </li>

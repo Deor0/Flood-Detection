@@ -1,8 +1,9 @@
-# Helpline API
+# Helpline API (The Beacon Line)
 
-One public endpoint files a missing-person report and looks a name up. It was built for a voice agent (Vapi), and any other client can call the same URL. There is no API key and no login.
+Two public endpoints serve the Offline Helpline. There is no API key and no login.
 
-`POST /api/sms` is a separate stub and still returns `501`.
+- `POST /api/postsms`: tool calls from the voice agent, Mentor (Vapi). Described below.
+- `POST /api/sms`: one text message, sent on by the iOS Shortcut on the receiving phone. See [SMS line](#sms-line) at the end.
 
 ## Endpoint
 
@@ -51,7 +52,11 @@ The response is one result per tool call. `result` is a JSON string.
 
 ## report_missing_person
 
-Creates one `missing_persons` row and one `reported` event. The same row is appended to `data/helpline-reports.json` (or `HELPLINE_REPORTS_FILE` when that variable is set). That file is gitignored.
+Creates one `missing_persons` row, one `reported` event and one `sms_log` row with command `VOICE_REPORT` (the call's audit line: caller or `vapi-call:<call id>`, the report number and the normalized name).
+
+The same row is also appended to `data/helpline-reports.json` (or `HELPLINE_REPORTS_FILE`), best effort: the copy is skipped when `VERCEL` is set (read-only file system), and any write error is logged, not thrown. The tool result always comes back once the database row is saved, so Vapi has no reason to retry. That file is gitignored.
+
+**Repeats.** If the same caller number (or, when the number is hidden, the same `call.id`) already reported the same name (case, spacing and accents ignored) in the last 10 minutes, nothing new is written and the earlier record comes back with `"duplicate": true`. Reports from one caller or call are handled one at a time, so a retried tool call cannot slip past this check.
 
 | Field | Required | Stored as |
 | --- | --- | --- |
@@ -82,6 +87,8 @@ Success:
 ```json
 { "ok": true, "publicId": "REG-01001", "name": "Sarah Jenkins", "status": "missing" }
 ```
+
+A repeat returns the earlier record with `"duplicate": true` (and its current `status`). A tool that throws returns `{ "ok": false, "error": "server_error" }` for that call only.
 
 `name` in the response is the trimmed name.
 
@@ -198,3 +205,23 @@ Nothing is written.
 - It does not send an SMS or start a phone call.
 - It does not require `VAPI_WEBHOOK_SECRET`. That check was removed on purpose for the demo.
 - It does not delete reports. A row stays in `missing_persons` and moves to `found` through the website, not through this route.
+
+## SMS line
+
+`POST /api/sms` with `{ "from": "+14155552671", "body": "SEARCH Maya Rai" }` returns `{ "reply": "..." }`. Only numbers listed in `SMS_ALLOWED_FROM` are served (one number or a comma-separated list, US numbers, any format); any other sender gets `{ "reply": "This number is not allowed to use the line." }` and nothing is written. Bad JSON is a 400.
+
+The reply comes from `handleInboundSms` (`src/core/sms`). Every text is appended to `sms_log`.
+
+| Command | Also accepted | Reply |
+| --- | --- | --- |
+| `SEARCH <name>` | `FIND`, `LOOK`, `KHOJ` | Up to 3 matches: `REG-01001 Maya Rai: MISSING (Rasuwa)`. Coarse region only; under-18s as initials. |
+| `MISSING <name>, <place>, <age>` | `LOST`, `REPORT`, `HARAYO` | Files a report. Place and age are optional; `Maya Rai, 34` is name and age. An unreadable age (`unknown`, `200`) is dropped, not refused. |
+| `FOUND <name>` or `FOUND REG-01001` | `SAFE`, `HOME`, `BHETIYO` | Marks found. Only the phone that filed the report can. |
+| `STATUS <place>` | `RIVER`, `FLOOD` | Saved, simulated river level for the demo places (Kathmandu, Rasuwa, St Louis, Cologne, Sukkur), labelled `SIMULATION, not an official forecast`, with the save date. Other places: "No river data for X" and "go to higher ground". |
+| `HELP` | anything else | The command list. |
+
+Forgiving input: punctuation after the command (`SEARCH: Maya`), any case, and one wrong, missing, extra or swapped letter in a command word of 4+ letters (`SERCH`, `MISING`, `FOUN`).
+
+Repeats: a `MISSING` or `FOUND` text identical (case and spacing ignored) to the same phone's previous text within 2 minutes gets the first reply again and is logged as `DUPLICATE`; nothing is filed twice. Texts from one phone are handled one at a time.
+
+Reunion notice: when a phone texts in, any report it filed that someone else marked found since its previous text (or in the last 30 days, for a first text) is announced first: `Good news: REG-01001 Maya Rai is home safe.` Replies stay within 320 plain-ASCII characters.
