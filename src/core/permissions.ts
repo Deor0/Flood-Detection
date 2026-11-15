@@ -24,14 +24,6 @@ export function canEditMissingDirectly(actor: Actor, person: OwnedMissing): bool
   return !!actor.isAdmin || isReporter(actor, person);
 }
 
-/**
- * The reporter and admins mark a record found at once. Anyone else only reports the person safe;
- * that claim waits for the reporter or an admin to confirm, so one account cannot close a case.
- */
-export function canMarkFoundDirectly(actor: Actor, person: OwnedMissing): boolean {
-  return !!actor.isAdmin || isReporter(actor, person);
-}
-
 /** The contact line is private to admins and the reporter. */
 export function canSeeContact(actor: Actor, person: OwnedMissing): boolean {
   return !!actor.isAdmin || isReporter(actor, person);

@@ -23,15 +23,6 @@
   margin-bottom: 2rem;
 }
 
-.kicker {
-  margin: 0 0 0.3rem;
-  color: var(--primary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .title {
   margin: 0 0 0.6rem;
   font-size: clamp(1.8rem, 5vw, 2.5rem);
@@ -153,31 +144,6 @@
   margin: 0.6rem 0 0;
   color: var(--ink-soft);
   line-height: 1.6;
-}
-
-.timeline {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-left: 3px solid var(--line-strong);
-}
-
-.step {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.55rem 0 0.55rem 1rem;
-  line-height: 1.55;
-}
-
-.when {
-  color: var(--primary);
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.timeline a {
-  color: var(--ink-soft);
-  font-size: 0.8rem;
 }
 
 .why {

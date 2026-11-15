@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { ArrowRight, Check, Eye, EyeOff, type LucideIcon } from 'lucide-react';
 import styles from './auth.module.css';
 
@@ -89,19 +89,4 @@ export function SubmitButton({
       {!busy && <ArrowRight size={16} aria-hidden="true" />}
     </button>
   );
-}
-
-/**
- * Link to the other auth page that keeps `?redirect_url=` from the current URL, so switching
- * between sign-in and sign-up still returns the visitor to the page they wanted. The server render
- * uses the plain path; the query is added after mount.
- */
-export function useAuthSwitchHref(path: '/sign-in' | '/sign-up'): string {
-  const [href, setHref] = useState<string>(path);
-  useEffect(() => {
-    const redirect = new URLSearchParams(window.location.search).get('redirect_url');
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL once after mount
-    if (redirect) setHref(`${path}?redirect_url=${encodeURIComponent(redirect)}`);
-  }, [path]);
-  return href;
 }

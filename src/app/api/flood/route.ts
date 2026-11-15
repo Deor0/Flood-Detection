@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server';
 import {
   cellKey,
   getFreshClimatology,
@@ -5,7 +6,6 @@ import {
   type CacheDb,
   type ClimatologyInput,
 } from '@/core/flood/climatologyCache';
-import { dedupe } from '@/core/flood/inflight';
 import { fitGumbel, hydrologicalYearMaxima, returnLevels, returnPeriodRange } from '@/model/gumbel';
 import {
   combineDaily,
@@ -14,6 +14,7 @@ import {
   findReach,
   chooseReach,
   GEOGLOWS_ATTRIBUTION,
+  GeoglowsError,
 } from '@/model/geoglows';
 import {
   FloodApiError,
@@ -28,12 +29,6 @@ import {
 } from '@/model/openMeteo';
 import { classifyDischarge } from '@/model/severity';
 import { FLOOD_ATTRIBUTION, type FloodResponse, type Severity } from '@/model/types';
-
-/**
- * A cold GEOGloWS lookup (nearby reaches, then 40 years of history) can take most of a minute;
- * let the platform run it that long instead of cutting it off at its default.
- */
-export const maxDuration = 60;
 
 const HISTORY_START = '1984-01-01';
 const FORECAST_DAYS = 16;
@@ -106,13 +101,6 @@ const historyCache = makeCache<Located>();
 const placeCache = makeCache<string>();
 const ensembleCache = makeCache<EnsembleBand>(ENSEMBLE_TTL_MS);
 const cellCache = makeCache<Cell>(ENSEMBLE_TTL_MS);
-
-/**
- * Lookups in flight, keyed by day and climatology cell. A second click on the same cell while the
- * first is still downloading waits for that one instead of starting its own (no stampede on the
- * upstream services). The entry is removed as soon as it settles, so failures are not cached.
- */
-const inflight = new Map<string, Promise<Source | 'noRiver'>>();
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -506,8 +494,7 @@ function noRiverBody(lat: number, lng: number): FloodResponse {
     snapDistanceKm: 0,
     noRiver: true,
     series: { days: [], discharge: [] },
-    climatology: { years: 0, q2: null, fit: null, returnLevels: [], normalFlow: null },
-    severities: { today: 'unknown', forecastPeak: 'unknown' },
+    climatology: { years: 0, q2: null, fit: null, returnLevels: [] },
     current: {
       discharge: null,
       returnPeriod: null,
@@ -620,9 +607,7 @@ async function respond(
       fit,
       returnLevels: returnLevels(fit),
       ...(range ? { returnPeriodRange: range } : {}),
-      normalFlow: meanFlow > 0 ? meanFlow : null,
     },
-    severities: { today: todaySeverity, forecastPeak: forecastSeverity },
     current: {
       discharge: current,
       returnPeriod: classified?.returnPeriod ?? null,
@@ -648,26 +633,10 @@ async function respond(
   return json(body, 200, 'private, max-age=300');
 }
 
-/** GEOGloWS first; any failure there falls back to Open-Meteo. Throws only when both fail. */
-async function loadSource(
-  lat: number,
-  lng: number,
-  today: string,
-  end: string,
-): Promise<Source | 'noRiver'> {
-  try {
-    return await fromGeoglows(lat, lng, today);
-  } catch (err) {
-    console.warn('GEOGloWS failed; using Open-Meteo:', err instanceof Error ? err.message : err);
-    return fromOpenMeteo(lat, lng, today, end);
-  }
-}
-
-/**
- * Read-only and public: anyone, signed in or not, can look up a river (the page is public too).
- * Only the admin alert actions on the dashboard need an account, and they check it themselves.
- */
 export async function GET(request: Request) {
+  const { userId } = await auth();
+  if (!userId) return json({ error: 'Sign in required' }, 401);
+
   const params = new URL(request.url).searchParams;
   const lat = parseCoordinate(params.get('lat'), 90);
   const lng = parseCoordinate(params.get('lng'), 180);
@@ -680,20 +649,24 @@ export async function GET(request: Request) {
 
   let src: Source | 'noRiver';
   try {
-    src = await dedupe(inflight, `${today}|${cellKey(lat, lng)}`, () =>
-      loadSource(lat, lng, today, end),
-    );
-  } catch (fallbackErr) {
-    const timedOut =
-      fallbackErr instanceof Error &&
-      (fallbackErr.name === 'TimeoutError' || fallbackErr.name === 'AbortError');
-    const reason =
-      fallbackErr instanceof FloodApiError
-        ? fallbackErr.message
-        : timedOut
-          ? 'Flood data service timed out'
-          : 'Flood data service unavailable';
-    return json({ error: reason }, 502);
+    src = await fromGeoglows(lat, lng, today);
+  } catch (err) {
+    // GEOGloWS is the primary source; any failure falls back to Open-Meteo.
+    console.warn('GEOGloWS failed; using Open-Meteo:', err instanceof Error ? err.message : err);
+    try {
+      src = await fromOpenMeteo(lat, lng, today, end);
+    } catch (fallbackErr) {
+      const timedOut =
+        fallbackErr instanceof Error &&
+        (fallbackErr.name === 'TimeoutError' || fallbackErr.name === 'AbortError');
+      const reason =
+        fallbackErr instanceof FloodApiError
+          ? fallbackErr.message
+          : timedOut
+            ? 'Flood data service timed out'
+            : 'Flood data service unavailable';
+      return json({ error: reason }, 502);
+    }
   }
 
   if (src === 'noRiver') return json(noRiverBody(lat, lng), 200, 'private, max-age=300');

@@ -1,3 +1,5 @@
+import { auth } from '@clerk/nextjs/server';
+
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 14;
 
@@ -6,11 +8,11 @@ function integer(value: string | null): number | null {
   return Number(value);
 }
 
-/**
- * Proxies one AWS Terrarium elevation tile so the browser never calls a third party directly.
- * Public and read-only, like the flood desk page that uses it.
- */
+/** Proxies one AWS Terrarium elevation tile so the browser never calls a third party directly. */
 export async function GET(request: Request) {
+  const { userId } = await auth();
+  if (!userId) return Response.json({ error: 'Sign in required' }, { status: 401 });
+
   const params = new URL(request.url).searchParams;
   const z = integer(params.get('z'));
   const x = integer(params.get('x'));

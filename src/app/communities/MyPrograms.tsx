@@ -7,7 +7,6 @@ import { getViewer } from '@/lib/roles';
 import { CancelProgramButton, EditProgramForm } from './ProgramForms';
 import styles from './programs.module.css';
 import { appTimeZone } from '@/lib/time';
-import { placesLine } from './when';
 
 export const STATUS_LABEL: Record<ProgramStatus, string> = {
   pending: 'Pending review',
@@ -25,11 +24,7 @@ export async function MyPrograms() {
     items = await listMyPrograms(getDb(), userId);
   } catch (err) {
     console.error('my programs load failed', err);
-    return (
-      <p role="alert" className={styles.loadError}>
-        Could not load your programs. Refresh the page to try again.
-      </p>
-    );
+    return null;
   }
   if (items.length === 0) return null;
   const viewer = await getViewer();
@@ -50,13 +45,8 @@ export async function MyPrograms() {
               </span>
               <h3 className={styles.cardTitle}>{p.title}</h3>
               <p className={styles.meta}>
-                {p.location} · {placesLine(p.registered, p.capacity)}
+                {p.location} · {p.registered} registered
               </p>
-              {p.status === 'approved' && manage && !viewer.isAdmin && (
-                <p className={styles.meta}>
-                  Changing the title, category, organizer, place or time sends it back for review.
-                </p>
-              )}
               {p.status === 'rejected' && p.rejectionReason && (
                 <p className={styles.reason}>Reason: {p.rejectionReason}</p>
               )}

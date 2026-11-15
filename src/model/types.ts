@@ -27,14 +27,7 @@ export type FloodResponse = {
     returnLevels: { T: number; q: number }[];
     /** Bootstrap 90% range of the current return period (years, uncapped); absent without a fit. */
     returnPeriodRange?: { low: number; high: number };
-    /**
-     * Long-term average daily flow (m3/s), the river's normal level. The terrain already shows the
-     * water surface at about this flow, so the water fill only draws the rise above it.
-     */
-    normalFlow: number | null;
   };
-  /** Today's severity and the forecast peak's (next 15 days), kept apart for the badge. */
-  severities: { today: Severity; forecastPeak: Severity };
   current: {
     discharge: number | null;
     returnPeriod: number | null;

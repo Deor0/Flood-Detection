@@ -1,17 +1,7 @@
 import type { Metadata } from 'next';
 import { MessageSquareText, Phone } from 'lucide-react';
 import ui from '@/components/page-ui.module.css';
-import {
-  COMMANDS,
-  HELPLINE_KICKER,
-  HELPLINE_NAME,
-  PRIVACY_POINTS,
-  VOICE_AGENT_NAME,
-  VOICE_NUMBER,
-  telHref,
-} from '@/lib/helpline';
-import { getViewer } from '@/lib/roles';
-import { SignInLink } from '@/components/SignInLink';
+import { COMMANDS, HELPLINE_NAME, PRIVACY_POINTS, VOICE_NUMBER, telHref } from '@/lib/helpline';
 import { Simulator } from './Simulator';
 import styles from './simulator.module.css';
 
@@ -21,10 +11,10 @@ const DESCRIPTION =
   'Search for someone, report a missing person, or mark them found by phone call or text message, with no internet. Practise both here first.';
 
 export const metadata: Metadata = {
-  title: `${HELPLINE_NAME} · ${HELPLINE_KICKER}`,
+  title: `${HELPLINE_NAME} · Flood Response`,
   description: DESCRIPTION,
   openGraph: {
-    title: `${HELPLINE_NAME} (${HELPLINE_KICKER}): call or text when the internet is down`,
+    title: `${HELPLINE_NAME}: call or text when the internet is down`,
     description: DESCRIPTION,
     type: 'website',
   },
@@ -36,8 +26,8 @@ const STEPS = [
     text: 'From any phone, smartphone or basic. Mobile data is not needed, only a phone signal.',
   },
   {
-    title: 'The beacon receives it',
-    text: `${VOICE_AGENT_NAME}, the voice agent, listens to your call. A text goes to our receiving phone, which is online and passes it on like a signal fire.`,
+    title: 'The helpline receives it',
+    text: 'The voice agent listens to your call. A text goes to our receiving phone, which is online.',
   },
   {
     title: 'The registry updates',
@@ -45,17 +35,15 @@ const STEPS = [
   },
   {
     title: 'You get an answer',
-    text: `${VOICE_AGENT_NAME} tells you, or a reply text comes back, usually within a few seconds.`,
+    text: 'The agent tells you, or a reply text comes back, usually within a few seconds.',
   },
 ] as const;
 
-export default async function HelplinePage() {
-  const viewer = await getViewer();
+export default function HelplinePage() {
   return (
     <main className={ui.page}>
       <div className={ui.header}>
         <div>
-          <p className={styles.kicker}>{HELPLINE_KICKER}</p>
           <h1 className={ui.title}>{HELPLINE_NAME}</h1>
           <p className={ui.lede}>
             When the internet is down, a phone call or a text still gets through. Look for a family
@@ -73,15 +61,15 @@ export default async function HelplinePage() {
             </span>
             <h2>Call the voice line</h2>
           </div>
-          <span className={`${styles.status} ${styles.statusLive}`}>Live</span>
+          <span className={`${styles.status} ${VOICE_NUMBER ? styles.statusLive : ''}`}>
+            {VOICE_NUMBER ? 'Live' : 'Number coming soon'}
+          </span>
           {VOICE_NUMBER && (
             <p className={styles.number}>
               <a href={telHref(VOICE_NUMBER)}>{VOICE_NUMBER}</a>
             </p>
           )}
-          <p>
-            Talk to {VOICE_AGENT_NAME}, our AI voice agent, in plain words. {VOICE_AGENT_NAME} can:
-          </p>
+          <p>Talk to an AI voice agent in plain words. It can:</p>
           <ul>
             <li>check whether a person is listed as missing or found</li>
             <li>file a missing person report (name, last place seen, age)</li>
@@ -120,21 +108,10 @@ export default async function HelplinePage() {
           Practise here first
         </h2>
         <p className={styles.sectionLede}>
-          Try the text commands, or walk through a call with {VOICE_AGENT_NAME}, the voice agent.
-          Both use the real registry, so the answers match what a phone would get. Nothing is sent
-          to any phone.
+          Try the text commands, or walk through a call with the voice agent. Both use the real
+          registry, so the answers match what a phone would get. Nothing is sent to any phone.
         </p>
-        {viewer.userId ? (
-          <Simulator />
-        ) : (
-          <div className={styles.signedOut}>
-            <p>
-              Practice texts and calls file real records, so the practice phone is for signed-in
-              volunteers. Everything else on this page is open to all.
-            </p>
-            <SignInLink to="practise" />
-          </div>
-        )}
+        <Simulator />
       </section>
 
       <section className={styles.section} aria-labelledby="how-title">
@@ -201,13 +178,8 @@ export default async function HelplinePage() {
             <li key={point}>{point}</li>
           ))}
           <li>
-            Sending the same report twice by mistake files it once. When someone marks a person you
-            reported as found, your next text starts with the good news.
-          </li>
-          <li>
-            Replies are plain text, at most 320 characters. River status by text uses saved,
-            simulated river data for a few places. It is an educational simulation, not an official
-            forecast. If water is rising, go to higher ground.
+            Replies are plain text, at most 320 characters. River status by text points you to the
+            web flood desk, which is an educational simulation, not an official forecast.
           </li>
           <li>
             The helpline does not replace emergency services. If someone is in danger now, call your

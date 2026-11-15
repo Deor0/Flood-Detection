@@ -1,1 +1,7 @@
-{}
+{
+  "hero": {
+    "photographer": "Cristian Palmer",
+    "photoUrl": "https://unsplash.com/photos/3leBubkp5hk",
+    "title": "Hero photo"
+  }
+}

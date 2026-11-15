@@ -60,8 +60,6 @@ describe('Clerk session gate', () => {
       '/api/postsms(.*)',
       '/geo/(.*)',
       '/demo(.*)',
-      '/sms-simulator(.*)',
-      '/opengraph-image(.*)',
     ]);
 
     for (const path of [
@@ -81,8 +79,6 @@ describe('Clerk session gate', () => {
       '/api/postsms',
       '/geo/place.json',
       '/demo',
-      '/sms-simulator',
-      '/opengraph-image',
     ]) {
       protect.mockClear();
       await proxy(incoming(path));
@@ -90,8 +86,8 @@ describe('Clerk session gate', () => {
     }
   });
 
-  it('requires a Clerk session for admin', async () => {
-    for (const path of ['/admin', '/admin/users', '/admin/missing']) {
+  it('requires a Clerk session for admin and the SMS simulator', async () => {
+    for (const path of ['/admin', '/admin/users', '/admin/missing', '/sms-simulator']) {
       protect.mockClear();
       await proxy(incoming(path));
       expect(protect, path).toHaveBeenCalledOnce();

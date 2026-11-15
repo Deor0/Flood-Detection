@@ -5,14 +5,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { useSignIn } from '@clerk/nextjs';
 import { IdCard, Lock } from 'lucide-react';
 import { destinationAfterAuth, isEmail } from '@/lib/auth-forms';
-import {
-  Field,
-  FormError,
-  PasswordToggle,
-  SubmitButton,
-  useAuthSwitchHref,
-  type Status,
-} from './AuthShared';
+import { Field, FormError, PasswordToggle, SubmitButton, type Status } from './AuthShared';
 import { ForgotPassword } from './ForgotPassword';
 import styles from './auth.module.css';
 
@@ -26,7 +19,6 @@ export function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [forgot, setForgot] = useState(false);
-  const signUpHref = useAuthSwitchHref('/sign-up');
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -78,7 +70,7 @@ export function SignInForm() {
         <h1 id={`${uid}-title`} className={styles.heading}>
           SIGN IN
         </h1>
-        <p className={styles.subtitle}>Return to the desk. Sign in with your email and password.</p>
+        <p className={styles.subtitle}>Enter your credentials to access operations</p>
 
         <form onSubmit={submit} noValidate className={styles.form}>
           <FormError message={formError} />
@@ -135,7 +127,7 @@ export function SignInForm() {
         </form>
 
         <p className={styles.switch}>
-          Don&apos;t have an account? <Link href={signUpHref}>JOIN THE CREW</Link>
+          Don&apos;t have an account? <Link href="/sign-up">CREATE ONE</Link>
         </p>
       </section>
     </div>

@@ -97,11 +97,7 @@ export async function editProgramAction(
     }
     revalidatePath('/communities');
     revalidatePath('/admin/programs');
-    const sentBack = result.program.status === 'pending' && Object.keys(result.changes).length > 0;
-    return {
-      ok: true,
-      message: sentBack ? 'Saved. The change goes live once an admin approves it.' : 'Saved.',
-    };
+    return { ok: true, message: 'Saved.' };
   } catch (err) {
     console.error('editProgramAction failed', err);
     return { message: SERVER_ERROR };
@@ -137,7 +133,7 @@ export async function cancelProgramAction(programId: string): Promise<FormState>
 const REASONS = {
   not_found: 'That program no longer exists.',
   not_open: 'This program is not open for registration.',
-  full: 'The ship is full — check back later; places free up when people cancel.',
+  full: 'This program is full.',
   already_registered: 'You are already registered.',
   ended: 'This program has already ended.',
 } as const;

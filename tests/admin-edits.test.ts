@@ -58,11 +58,8 @@ describe('edit suggestions', () => {
 
   it('stops one user at 10 pending suggestions', async () => {
     const suggester = { userId: 'user_suggester' };
-    // Own reporters: the shared one already filed reports above and would hit its 10-a-day limit.
-    const capReporter = { userId: 'user_cap_reporter' };
-    const overflowReporter = { userId: 'user_overflow_reporter' };
     for (let i = 0; i < LIMITS.editRequestsPerUserPending; i += 1) {
-      const reported = await reportMissing(ctx.db, capReporter, { name: `Queue ${i}` });
+      const reported = await reportMissing(ctx.db, reporter, { name: `Queue ${i}` });
       expect(reported.ok).toBe(true);
       if (!reported.ok) return;
       const suggestion = await requestEdit(ctx.db, suggester, reported.person.id, {
@@ -71,7 +68,7 @@ describe('edit suggestions', () => {
       });
       expect(suggestion.ok).toBe(true);
     }
-    const extra = await reportMissing(ctx.db, overflowReporter, { name: 'Queue overflow' });
+    const extra = await reportMissing(ctx.db, reporter, { name: 'Queue overflow' });
     expect(extra.ok).toBe(true);
     if (!extra.ok) return;
     expect(

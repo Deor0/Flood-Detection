@@ -8,11 +8,6 @@ export type CacheDb = PgDatabase<PgQueryResultHKT, typeof import('@/db/schema')>
 const CELL_DEGREES = 0.05;
 /** History does not change, but a new hydrological year can complete: refresh monthly. */
 export const CLIMATOLOGY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-/**
- * A "no river here" verdict can rest on a short window of flow (a dry season, a service gap), so
- * it is trusted for a week only; then the point is looked up again.
- */
-export const NO_RIVER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type Climatology = {
   cellKey: string;
@@ -34,17 +29,8 @@ export function cellKey(lat: number, lng: number): string {
   return `${Math.round(lat / CELL_DEGREES)}:${Math.round(lng / CELL_DEGREES)}`;
 }
 
-export function isFresh(
-  updatedAt: Date,
-  now: Date = new Date(),
-  maxAgeMs: number = CLIMATOLOGY_MAX_AGE_MS,
-): boolean {
-  return now.getTime() - updatedAt.getTime() <= maxAgeMs;
-}
-
-/** Fresh for its kind: 30 days for a river's history, 7 days for a "no river" verdict. */
-export function isUsable(row: Pick<Climatology, 'noRiver' | 'updatedAt'>, now = new Date()) {
-  return isFresh(row.updatedAt, now, row.noRiver ? NO_RIVER_MAX_AGE_MS : CLIMATOLOGY_MAX_AGE_MS);
+export function isFresh(updatedAt: Date, now: Date = new Date()): boolean {
+  return now.getTime() - updatedAt.getTime() <= CLIMATOLOGY_MAX_AGE_MS;
 }
 
 function numbers(value: unknown): number[] {
@@ -76,14 +62,14 @@ export async function getClimatology(db: CacheDb, key: string): Promise<Climatol
   };
 }
 
-/** The stored row only while it is fresh (30 days; a "no river" row 7 days). */
+/** The stored row only while it is fresh (younger than 30 days). */
 export async function getFreshClimatology(
   db: CacheDb,
   key: string,
   now: Date = new Date(),
 ): Promise<Climatology | null> {
   const row = await getClimatology(db, key);
-  return row && isUsable(row, now) ? row : null;
+  return row && isFresh(row.updatedAt, now) ? row : null;
 }
 
 /** Insert, or refresh the existing row in place. Nothing is ever deleted. */

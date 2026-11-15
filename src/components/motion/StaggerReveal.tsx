@@ -11,15 +11,10 @@ gsap.registerPlugin(useGSAP, ScrollTrigger);
 const DURATION = 0.6;
 const STAGGER = 0.08;
 const START = 'top 85%';
-// The CSS-only hero cascade (`[data-reveal-css]`) runs first; on-screen groups start after its lead.
-const HERO_LEAD = 0.45;
 
 /**
  * Staggered cascade. Every `[data-reveal-group]` inside plays its `[data-reveal]` items one after
  * another, in DOM order: the first group on load, the rest when they scroll into view.
- *
- * The hero is not a group: its items carry `[data-reveal-css]` and animate with CSS alone, so the
- * first thing people see never waits for this script. Groups on screen at load follow it.
  *
  * The server HTML carries the `pending` class, which hides the items before the first paint so
  * nothing flashes. A CSS failsafe shows them after a few seconds if this script never runs, and
@@ -52,8 +47,7 @@ export function StaggerReveal({ children }: { children: ReactNode }) {
       mm.add('(prefers-reduced-motion: no-preference)', () => {
         const groups = gsap.utils.toArray<HTMLElement>('[data-reveal-group]', el);
         const fold = window.innerHeight * 0.85;
-        // Groups already on screen at load wait their turn after the one above (the hero first).
-        let queued = el.querySelector('[data-reveal-css]') ? HERO_LEAD : 0;
+        let queued = 0; // groups already on screen at load wait their turn after the one above
 
         groups.forEach((group, index) => {
           const items = gsap.utils.toArray<HTMLElement>('[data-reveal]', group);

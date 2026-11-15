@@ -9,13 +9,7 @@ import { groundResolution } from '@/model/terrarium';
  *  1. `solveField` (heavy, once per click): HAND on the stitched terrain, the main river the click
  *     belongs to, the reach around the seed, and the channel slope.
  *  2. `simulateField` (cheap, per scenario): stage from the Manning synthetic rating curve in
- *     `@/model/rating`, then depth = excess stage - HAND.
- *
- * Excess stage: the terrain model (SRTM-style DEM) records the water surface, not the river bed, so
- * HAND 0 is already the river at about its normal flow. The rating curve built from that surface
- * also gives a stage for normal flow, which would wrongly flood the banks of every big river on an
- * ordinary day. So the drawn water is the rise above normal: stage(Q) - stage(Q_base), where Q_base
- * is the river's long-term average flow. Without a Q_base the full stage is used (old behaviour).
+ *     `@/model/rating`, then depth = stage - HAND.
  *
  * Reach and slope method (documented because the numbers depend on it):
  *  - Seed: the stream cell with the largest upstream accumulation within about 3 km of the river-flow
@@ -42,9 +36,6 @@ export type SolveInput = {
   zoom: number;
 };
 
-/** A dry spot found after a simulation: grid cell and straight-line distance from the origin. */
-export type HighGround = { x: number; y: number; distM: number; fromX: number; fromY: number };
-
 export type SolveOutput = {
   /** HAND per cell; Infinity for cells that do not drain to the main river. */
   hand: Float32Array;
@@ -66,9 +57,6 @@ export type SolveOutput = {
   /** Stream cells in the reach, and their approximate length in metres. */
   reachStreamCells: number;
   reachLengthM: number;
-  /** The river-flow point in the grid (clamped), the default origin for the high-ground search. */
-  px: number;
-  py: number;
 };
 
 /** Everything about a solved terrain except the big grids. */
@@ -79,16 +67,6 @@ export type SimOptions = {
   q: number;
   /** Multiplies Manning roughness; 1 is the default of 0.05. The low/high stage use +-30% of it. */
   nScale?: number;
-  /**
-   * Normal flow in m3/s (long-term average). The terrain already shows the river at about this
-   * flow, so only the rise above stage(qBase) floods. Omitted or <= 0: no correction.
-   */
-  qBase?: number;
-  /**
-   * Grid cell to search for the nearest high ground from (usually the clicked point). Defaults to
-   * the river-flow point the terrain was prepared around.
-   */
-  origin?: { x: number; y: number };
 };
 
 export type SimResult = {
@@ -96,12 +74,8 @@ export type SimResult = {
   depth: Float32Array;
   /** 1 on the boundary of the high-stage wet area (the dashed outline). */
   highEdge: Uint8Array;
-  /** Rise above the normal river level, metres (stage(q) - stage(qBase)). */
   stage: { low: number; central: number; high: number };
-  /** Stage at normal flow (the level the terrain already shows), metres; 0 without a qBase. */
-  baseStage: number;
   q: number;
-  qBase: number;
   nUsed: number;
   slope: number;
   maxDepth: number;
@@ -109,11 +83,6 @@ export type SimResult = {
   wetAreaKm2: number;
   /** Same text as the terrain handle's warning, repeated here so a result is self-contained. */
   seedWarning?: string;
-  /**
-   * Nearest cell (from `origin`) that stays dry even at the high stage, with a margin, and whose
-   * neighbours are dry too. Null when nothing floods or no such cell is in the window. An estimate.
-   */
-  highGround: HighGround | null;
 };
 
 export { RAMP_DEEP, RAMP_SHALLOW } from './ramp';
@@ -127,8 +96,6 @@ const SEED_SEARCH_M = 3000;
 const SEED_WARN_M = 1000;
 const BASE_N = 0.05;
 const MAX_STAGE_M = 50;
-/** High ground must sit at least this far above the high-stage water. */
-const HIGH_GROUND_MARGIN_M = 1;
 const N8: ReadonlyArray<readonly [number, number]> = [
   [-1, -1],
   [0, -1],
@@ -328,110 +295,48 @@ export function solveField(input: SolveInput): SolveOutput {
     cellSizeM: res,
     reachStreamCells,
     reachLengthM: reachStreamCells * res,
-    px,
-    py,
   };
 }
 
-/**
- * Nearest cell to (ox, oy) that stays dry at `stage` plus a margin, with all 8 neighbours dry too
- * (so a one-pixel bump in the water does not count). Cells that do not drain to the main river
- * (HAND Infinity) count as dry. Returns null when none is in the grid.
- */
-export function findHighGround(
-  hand: Float32Array,
-  width: number,
-  height: number,
-  ox: number,
-  oy: number,
-  stage: number,
-  cellSizeM: number,
-): HighGround | null {
-  const fromX = Math.min(width - 1, Math.max(0, Math.round(ox)));
-  const fromY = Math.min(height - 1, Math.max(0, Math.round(oy)));
-  const floor = stage + HIGH_GROUND_MARGIN_M;
-  const dry = (i: number) => !(hand[i] < floor);
-  let best = Infinity;
-  let bx = -1;
-  let by = -1;
-  for (let y = 1; y < height - 1; y += 1) {
-    const dy = y - fromY;
-    if (dy * dy >= best) continue;
-    for (let x = 1; x < width - 1; x += 1) {
-      const dx = x - fromX;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= best) continue;
-      const i = y * width + x;
-      if (!dry(i)) continue;
-      let ok = true;
-      for (const [ax, ay] of N8) {
-        if (!dry(i + ay * width + ax)) {
-          ok = false;
-          break;
-        }
-      }
-      if (!ok) continue;
-      best = d2;
-      bx = x;
-      by = y;
-    }
-  }
-  if (bx < 0) return null;
-  return { x: bx, y: by, distM: Math.sqrt(best) * cellSizeM, fromX, fromY };
-}
-
-/**
- * The cheap per-scenario step: stage from the rating curve, minus the stage of normal flow, then
- * depth over the cached HAND.
- */
+/** The cheap per-scenario step: stage from the rating curve, then depth over the cached HAND. */
 export function simulateField(solved: SolveOutput, options: SimOptions): SimResult {
   const { hand, width, height } = solved;
   const nScale = Number.isFinite(options.nScale) && options.nScale! > 0 ? options.nScale! : 1;
   const nUsed = Math.min(0.2, Math.max(0.01, BASE_N * nScale));
   const q = Number.isFinite(options.q) && options.q > 0 ? options.q : 0;
-  const qBase =
-    options.qBase !== undefined && Number.isFinite(options.qBase) && options.qBase > 0
-      ? options.qBase
-      : 0;
   const depth = new Float32Array(hand.length);
   const highEdge = new Uint8Array(hand.length);
   const empty: SimResult = {
     depth,
     highEdge,
     stage: { low: 0, central: 0, high: 0 },
-    baseStage: 0,
     q,
-    qBase,
     nUsed,
     slope: solved.slope,
     maxDepth: 0,
     wetShare: 0,
     wetAreaKm2: 0,
     seedWarning: solved.seedWarning,
-    highGround: null,
   };
   if (!solved.seedFound || q <= 0) return empty;
 
-  const rating = {
+  const raw = stageForDischarge({
     hand,
     reachMask: solved.reachMask,
     cellSizeM: solved.cellSizeM,
     slope: solved.slope,
     n: nUsed,
-  };
-  const raw = stageForDischarge({ ...rating, q });
-  const base =
-    qBase > 0 ? stageForDischarge({ ...rating, q: qBase }) : { low: 0, central: 0, high: 0 };
-  const excess = (a: number, b: number) => Math.min(MAX_STAGE_M, Math.max(0, a - b));
-  const central = excess(raw.central, base.central);
+    q,
+  });
   const stage = {
-    low: Math.min(central, excess(raw.low, base.low)),
-    central,
-    high: Math.max(central, excess(raw.high, base.high)),
+    low: Math.min(MAX_STAGE_M, raw.low),
+    central: Math.min(MAX_STAGE_M, raw.central),
+    high: Math.min(MAX_STAGE_M, raw.high),
   };
-  if (!(stage.central > 0)) return { ...empty, stage, baseStage: base.central };
+  if (!(stage.central > 0)) return { ...empty, stage };
 
-  depth.set(depthGrid(hand, stage.central));
+  const central = depthGrid(hand, stage.central);
+  depth.set(central);
   let wet = 0;
   let maxDepth = 0;
   for (let i = 0; i < depth.length; i += 1) {
@@ -456,25 +361,16 @@ export function simulateField(solved: SolveOutput, options: SimOptions): SimResu
     }
   }
 
-  const origin = options.origin ?? { x: solved.px, y: solved.py };
-  const highGround =
-    wet > 0
-      ? findHighGround(hand, width, height, origin.x, origin.y, stage.high, solved.cellSizeM)
-      : null;
-
   return {
     depth,
     highEdge,
     stage,
-    baseStage: base.central,
     q,
-    qBase,
     nUsed,
     slope: solved.slope,
     maxDepth,
     wetShare: wet / depth.length,
     wetAreaKm2: (wet * solved.cellSizeM * solved.cellSizeM) / 1e6,
     seedWarning: solved.seedWarning,
-    highGround,
   };
 }

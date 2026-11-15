@@ -2,8 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { PROGRAM_CATEGORIES } from '@/db/schema';
-import { categoryOption } from '@/core/programs/categories';
-import local from './programs.module.css';
+import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { FieldError, StateBanner, inputClass } from '@/components/FormBits';
 import styles from '@/components/page-ui.module.css';
 import { toZonedInput } from '@/lib/time';
@@ -47,7 +46,7 @@ export function HostForm({ timeZone = 'UTC' }: { timeZone?: string }) {
           </option>
           {PROGRAM_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {categoryOption(c)}
+              {CATEGORY_LABELS[c]}
             </option>
           ))}
         </select>
@@ -97,13 +96,10 @@ export function RegisterButton({
   programId,
   isRegistered,
   isFull,
-  label = 'Register',
 }: {
   programId: string;
   isRegistered: boolean;
   isFull: boolean;
-  /** "Join the crew" for volunteer categories, "Register" otherwise. */
-  label?: string;
 }) {
   const [pending, start] = useTransition();
   const [state, setState] = useState<FormState>({});
@@ -113,19 +109,22 @@ export function RegisterButton({
       setState(await (isRegistered ? cancelAction(programId) : registerAction(programId)));
     });
 
-  // Full and not on the list: no dead button, just say so. Seats free up when people cancel.
-  if (isFull && !isRegistered) return <p className={local.full}>The ship is full — check back</p>;
-
   return (
     <>
       {isRegistered && <p className={styles.registered}>✓ You are registered</p>}
       <button
         type="button"
         onClick={run}
-        disabled={pending}
+        disabled={pending || (isFull && !isRegistered)}
         className={`${styles.button} ${isRegistered ? styles.buttonLight : ''}`}
       >
-        {pending ? 'Working…' : isRegistered ? 'Cancel registration' : label}
+        {pending
+          ? 'Working…'
+          : isRegistered
+            ? 'Cancel registration'
+            : isFull
+              ? 'Full'
+              : 'Register to Attend'}
       </button>
       {state.message && !state.ok && (
         <p role="alert" className={styles.error}>
@@ -190,7 +189,7 @@ export function EditProgramForm({
         <select {...field('category')} defaultValue={program.category}>
           {PROGRAM_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {categoryOption(c)}
+              {CATEGORY_LABELS[c]}
             </option>
           ))}
         </select>

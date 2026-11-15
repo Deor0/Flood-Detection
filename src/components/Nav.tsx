@@ -11,7 +11,7 @@ const TABS = [
   { href: '/missing', label: 'Missing People' },
   { href: '/communities', label: 'Communities' },
   { href: '/guide', label: 'Flood Guide' },
-  { href: '/sms-simulator', label: 'Offline Helpline' },
+  { href: '/sms-simulator', label: 'SMS Simulator' },
 ] as const;
 
 /**
@@ -29,7 +29,8 @@ export function Nav({
   if (!signedIn && (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
     return null;
   }
-  const tabs = isAdmin ? [...TABS, { href: '/admin', label: 'Admin' }] : TABS;
+  const visible = signedIn ? TABS : TABS.filter((tab) => tab.href !== '/sms-simulator');
+  const tabs = isAdmin ? [...visible, { href: '/admin', label: 'Admin' }] : visible;
   return (
     <header className={styles.bar}>
       <div className={styles.inner}>

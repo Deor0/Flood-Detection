@@ -2,16 +2,32 @@ import { auth } from '@clerk/nextjs/server';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
 import { getDb } from '@/db';
 import type { ProgramCategory } from '@/db/schema';
-import { CATEGORY_BADGES, CATEGORY_THEMES, registerLabel } from '@/core/programs/categories';
+import { CATEGORY_BADGES } from '@/core/programs/categories';
 import { listPrograms } from '@/core/programs/service';
 import styles from '@/components/page-ui.module.css';
 import { appTimeZone } from '@/lib/time';
 import { SignInLink } from '@/components/SignInLink';
 import { RegisterButton } from './ProgramForms';
-import { formatWhen, placesLine } from './when';
-import local from './programs.module.css';
 
 const zone = appTimeZone();
+const day = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  timeZone: zone,
+});
+const clock = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: zone,
+});
+
+function when(start: Date, end: Date) {
+  const sameDay = day.format(start) === day.format(end);
+  return sameDay
+    ? `${day.format(start)}, ${clock.format(start)} – ${clock.format(end)}`
+    : `${day.format(start)}, ${clock.format(start)} – ${day.format(end)}, ${clock.format(end)}`;
+}
 
 /** The result list. This is the only part of the page that waits on Clerk and the database. */
 export async function ProgramResults({ q, category }: { q: string; category?: ProgramCategory }) {
@@ -50,9 +66,7 @@ export async function ProgramResults({ q, category }: { q: string; category?: Pr
           <li key={p.id} className={styles.program}>
             <div>
               <div className={styles.programTop}>
-                <span className={styles.type} title={CATEGORY_THEMES[p.category]}>
-                  {CATEGORY_BADGES[p.category]}
-                </span>
+                <span className={styles.type}>{CATEGORY_BADGES[p.category]}</span>
                 <span className={styles.organizer}>Organized by {p.organizer}</span>
                 {low && (
                   <span className={`${styles.pill} ${styles.pillWarn}`}>
@@ -70,11 +84,11 @@ export async function ProgramResults({ q, category }: { q: string; category?: Pr
                   <MapPin size={15} aria-hidden="true" /> {p.location}
                 </span>
                 <span className={styles.fact}>
-                  <CalendarDays size={15} aria-hidden="true" />{' '}
-                  {formatWhen(p.startsAt, p.endsAt, zone)}
+                  <CalendarDays size={15} aria-hidden="true" /> {when(p.startsAt, p.endsAt)}
                 </span>
                 <span className={styles.fact}>
-                  <Users size={15} aria-hidden="true" /> {placesLine(p.registered, p.capacity)}
+                  <Users size={15} aria-hidden="true" /> {p.registered} registered
+                  {p.capacity !== null ? ` • ${p.capacity} capacity` : ''}
                 </span>
               </div>
               {p.topics && (
@@ -85,16 +99,9 @@ export async function ProgramResults({ q, category }: { q: string; category?: Pr
             </div>
             <div className={styles.programSide}>
               {userId ? (
-                <RegisterButton
-                  programId={p.id}
-                  isRegistered={p.isRegistered}
-                  isFull={isFull}
-                  label={registerLabel(p.category)}
-                />
-              ) : isFull ? (
-                <p className={local.full}>The ship is full — check back</p>
+                <RegisterButton programId={p.id} isRegistered={p.isRegistered} isFull={isFull} />
               ) : (
-                <SignInLink small to="register" />
+                !isFull && <SignInLink small to="register" />
               )}
             </div>
           </li>

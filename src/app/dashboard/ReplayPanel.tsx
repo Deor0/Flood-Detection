@@ -36,8 +36,8 @@ export function ReplayPanel() {
       <h2 className={styles.h2}>{replay.title ?? 'Nepal flood, 26 August 2026'}</h2>
       <p>
         This is a record of events, shown with care for the people affected. It is{' '}
-        <strong>not an animated river rise</strong>: the event was a sudden surge, reportedly from a
-        glacial lake outburst, which river-discharge and rainfall data do not show.
+        <strong>not an animated river rise</strong>: the event began as a rock-and-ice slope
+        failure, which river-discharge and rainfall data do not show.
       </p>
       {replay.note && <p className={styles.muted}>{replay.note}</p>}
 

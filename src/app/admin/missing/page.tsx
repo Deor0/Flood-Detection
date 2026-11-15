@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import styles from '@/components/page-ui.module.css';
 import { adminPageGuard } from '@/lib/roles';
-import { BulkReopenForm } from './AdminMissingForms';
 import { EditRequestQueue, RecordsWithHistory } from './AdminMissingSections';
 import local from './admin-missing.module.css';
 
@@ -31,9 +30,8 @@ export default async function AdminMissingPage({
 
       <section className={local.section} aria-labelledby="queue-title">
         <h2 id="queue-title" className={local.sectionTitle}>
-          Suggested edits waiting for review — Penelope&rsquo;s Loom
+          Suggested edits waiting for review
         </h2>
-        <p className={local.counsel}>Oldest first, so the longest wait is reviewed first.</p>
         <Suspense fallback={<ListSkeleton />}>
           <EditRequestQueue />
         </Suspense>
@@ -63,15 +61,6 @@ export default async function AdminMissingPage({
         <Suspense key={q} fallback={<ListSkeleton />}>
           <RecordsWithHistory q={q} />
         </Suspense>
-      </section>
-      <section className={local.section} aria-labelledby="bulk-title">
-        <h2 id="bulk-title" className={local.sectionTitle}>
-          Re-open records falsely marked found
-        </h2>
-        <details>
-          <summary>Re-open everything marked found by one account or phone since a time</summary>
-          <BulkReopenForm />
-        </details>
       </section>
     </main>
   );

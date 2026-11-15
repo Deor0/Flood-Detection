@@ -5,13 +5,9 @@
  */
 
 export const HELPLINE_NAME = 'Offline Helpline';
-/** Odyssey theme: the kicker shown above the plain name. */
-export const HELPLINE_KICKER = 'The Beacon Line';
-/** The voice agent's name (Odyssey: Mentor, Telemachus's guide). */
-export const VOICE_AGENT_NAME = 'Mentor';
 export const HELPLINE_PATH = '/sms-simulator';
 
-/** The Vapi voice line (live). Set the number here to show it as a tap-to-call link. */
+/** The Vapi voice line, as it should be dialled. null shows "Number coming soon". */
 export const VOICE_NUMBER: string | null = null;
 
 /** The SMS line is a pilot: it is live, but not yet open to every phone, so no number is published. */

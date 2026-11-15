@@ -18,7 +18,6 @@ import { adminCancelProgramAction, adminEditProgramAction } from './actions';
 import { ApproveButton, RejectForm } from './ReviewControls';
 import { lookupUsers, whoIs } from './lookup';
 import { appTimeZone } from '@/lib/time';
-import { waitingLabel } from '@/core/admin/activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,12 +42,8 @@ export default async function AdminProgramsPage() {
 
       <section className={mine.section} aria-labelledby="queue">
         <h2 id="queue" className={mine.heading}>
-          Pending review — Penelope&rsquo;s Loom
+          Pending review
         </h2>
-        <p className={mine.meta}>
-          Oldest first. Athena&rsquo;s counsel: approve to weave a program into the public list;
-          reject to unpick it with a reason the host can read. Nothing is deleted.
-        </p>
         <Suspense fallback={<ListSkeleton />}>
           <PendingQueue />
         </Suspense>
@@ -81,12 +76,9 @@ async function PendingQueue() {
   if (items.length === 0)
     return <div className={pageStyles.empty}>Nothing waiting for review.</div>;
   const names = await lookupUsers(items.map((p) => p.createdByUserId));
-  const now = new Date();
-  // Oldest pending first: the longest wait is reviewed first.
-  const queue = [...items].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   return (
     <ul className={mine.cardList}>
-      {queue.map((p) => (
+      {items.map((p) => (
         <li key={p.id} className={mine.card}>
           <span className={`${mine.status} ${mine.pending}`}>{STATUS_LABEL.pending}</span>
           <h3 className={mine.cardTitle}>{p.title}</h3>
@@ -99,8 +91,7 @@ async function PendingQueue() {
           </p>
           {p.topics && <p className={mine.meta}>Topics: {p.topics}</p>}
           <p className={mine.meta}>
-            Submitted by {whoIs(names, p.createdByUserId)} on {stamp.format(p.createdAt)} UTC ·{' '}
-            <strong>{waitingLabel(p.createdAt, now)}</strong>
+            Submitted by {whoIs(names, p.createdByUserId)} on {stamp.format(p.createdAt)} UTC
           </p>
           <div className={mine.row}>
             <ApproveButton programId={p.id} />

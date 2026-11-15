@@ -40,7 +40,7 @@ export function validateSignUp(v: SignUpValues): Partial<Record<SignUpField, str
   const pw = passwordProblem(v.password);
   if (pw) e.password = pw;
   if (v.confirmPassword !== v.password) e.confirmPassword = 'Passwords do not match.';
-  if (!v.consent) e.consent = 'Tick the box to agree to account emails.';
+  if (!v.consent) e.consent = 'You must agree to emergency communications to register.';
   return e;
 }
 

@@ -17,11 +17,7 @@ export type FloodData = {
     returnLevels?: { T: number; q: number }[];
     /** Bootstrap range of the current return period, in years. */
     returnPeriodRange?: { low: number; high: number };
-    /** Long-term average flow, m3/s: the level the terrain already shows as water. */
-    normalFlow?: number | null;
   };
-  /** Today's severity and the forecast peak's. Older saved demo data may not have it. */
-  severities?: { today: Severity; forecastPeak: Severity };
   current?: {
     discharge: number | null;
     returnPeriod: number | null;

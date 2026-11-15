@@ -1,9 +1,9 @@
 {
-  "title": "Nepal flash flood (reported glacial lake outburst), 26 Aug 2026 (Bhote Koshi / Trishuli, Rasuwa)",
-  "note": "This is a documented timeline, not an animated river rise. Every date below is from the cited record.",
+  "title": "Nepal flood and slope failure, 26 Aug 2026 (Bhote Koshi / Trishuli, Rasuwa)",
+  "note": "This is a documented timeline, not an animated river rise. GloFAS and rain data show no spike for this event.",
   "limitations": [
-    "Glacial lake outburst floods (GLOFs), landslide-dam bursts and debris flows are not represented in a river model. Copernicus EMS records the 26 Aug 2026 flash flood as reportedly triggered by a GLOF upstream; a surge like this cannot be forecast from modelled rain and river flow.",
-    "Counts of affected buildings and people are estimates from satellite mapping."
+    "Debris flows and landslide-dam or glacier-lake floods are not visible to a river model: the 26 Aug 2026 event was a rock-and-ice slope failure that GloFAS discharge and rain data do not show.",
+    "Counts of buildings and people are estimates from satellite mapping."
   ],
   "sources": [
     {
@@ -12,36 +12,31 @@
       "license": "Copernicus EMS, free and open"
     },
     {
-      "name": "International Charter Space and Major Disasters, activation 1052",
-      "url": "https://disasterscharter.org/activations/flood-in-nepal-activation-1052-",
-      "license": "International Charter, attribution required"
+      "name": "GDACS event 1104124 (Red)",
+      "url": "https://www.gdacs.org/",
+      "license": "GDACS, attribution required"
     },
     {
-      "name": "GDACS event 1104124 (Red)",
-      "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104124",
-      "license": "GDACS, attribution required"
+      "name": "BIPAD Portal, Galchi river station (id 281)",
+      "url": "https://bipadportal.gov.np/",
+      "license": "Government of Nepal open data"
     }
   ],
   "series": [],
   "timeline": [
     {
-      "at": "2026-08-26T03:30:00Z",
-      "text": "About 9:15 local time: a sudden surge of water enters the Bhote Koshi from the Tibet (China) side, hits Timure and Rasuwagadhi, then moves towards Syapru Besi and the Trishuli. Reportedly a glacial lake outburst flood; the exact cause is still under investigation.",
-      "source": "International Charter activation 1052; Copernicus EMS EMSR927"
+      "at": "2026-08-26T02:52:00Z",
+      "text": "Onset of the rock-and-ice slope failure in the Bhote Koshi / Trishuli area, Rasuwa.",
+      "source": "GDACS event 1104124"
     },
     {
-      "at": "2026-08-26T09:53:00Z",
-      "text": "Copernicus EMS rapid mapping activated (EMSR927).",
-      "source": "Copernicus EMS EMSR927"
+      "at": "2026-08-28T00:00:00Z",
+      "text": "Barrier lake overflow. BIPAD Galchi river station (id 281) readings exist only from 28 Aug.",
+      "source": "BIPAD Portal"
     },
     {
-      "at": "2026-08-27T05:05:00Z",
-      "text": "First post-event satellite images (WorldView-3) of Syapru Besi and Timure acquired for damage mapping.",
-      "source": "Copernicus EMS EMSR927"
-    },
-    {
-      "at": "2026-09-01T14:00:00Z",
-      "text": "End of the GDACS red flood alert period for Nepal (from 26 Aug).",
+      "at": "2026-10-05T00:00:00Z",
+      "text": "Search and rescue operations ended.",
       "source": "GDACS event 1104124"
     }
   ],
@@ -49,25 +44,25 @@
     {
       "label": "Areas mapped",
       "value": "6",
-      "asOf": "2026-11-15",
+      "asOf": "2026-10-05",
       "source": "Copernicus EMS EMSR927"
     },
     {
-      "label": "Maximum mapped flood extent (hectares)",
+      "label": "Area affected (hectares)",
       "value": "1,580",
-      "asOf": "2026-11-15",
+      "asOf": "2026-10-05",
       "source": "Copernicus EMS EMSR927"
     },
     {
-      "label": "People affected (estimate)",
+      "label": "People in the area (estimate)",
       "value": "about 7,600",
-      "asOf": "2026-11-15",
+      "asOf": "2026-10-05",
       "source": "Copernicus EMS EMSR927"
     },
     {
-      "label": "Buildings affected (estimate)",
+      "label": "Buildings in the area (estimate)",
       "value": "4,685",
-      "asOf": "2026-11-15",
+      "asOf": "2026-10-05",
       "source": "Copernicus EMS EMSR927"
     }
   ]

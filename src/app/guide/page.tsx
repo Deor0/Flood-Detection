@@ -4,8 +4,6 @@ import {
   APP_LINKS,
   CARE_NOTES,
   CHECKED_ON,
-  EMERGENCY_NUMBERS,
-  MOUNTAIN_TIPS,
   PHASES,
   SOURCES,
   WATER_DEPTHS,
@@ -17,9 +15,9 @@ import { GuideVideo } from './GuideVideo';
 import styles from './guide.module.css';
 
 export const metadata = {
-  title: "Flood Guide (Circe's Chart): what to do during, before and after a flood",
+  title: 'Flood Guide: what to do before, during and after a flood',
   description:
-    'Short, sourced steps for during, before and after a flood, mountain floods (GLOFs and debris flows), and how to use this app when it happens.',
+    'Short, sourced steps for before, during and after a flood, and how to use this app when it happens.',
 };
 
 const sourceById = new Map(SOURCES.map((source) => [source.id, source]));
@@ -64,43 +62,22 @@ function StatList({ items, label }: { items: Stat[]; label: string }) {
 export default function GuidePage() {
   return (
     <main className={styles.page}>
-      <p className={styles.kicker}>Circe&apos;s Chart</p>
       <h1 className={styles.title}>Flood Guide</h1>
       <p className={styles.lede}>
-        What to do during, before and after a flood, with the urgent steps first. Short steps,
-        checked against public safety sources. This is general guidance, not an official warning.
-        Follow your local authorities.
+        What to do before, during and after a flood. Short steps, checked against public safety
+        sources. This is general guidance, not an official warning. Follow your local authorities.
       </p>
-      <div className={styles.danger} role="note" aria-label="Emergency numbers">
-        <p className={styles.dangerLine}>In an emergency, call first. Do not wait for this app.</p>
-        <ul className={styles.callList}>
-          {EMERGENCY_NUMBERS.map((entry) => (
-            <li key={entry.tel}>
-              {entry.place}:{' '}
-              <a className={styles.call} href={`tel:${entry.tel}`}>
-                {entry.label}
-              </a>
-            </li>
-          ))}
-          <li>Anywhere else: your local emergency number.</li>
-        </ul>
-      </div>
-      <p className={`${styles.note} ${styles.offline}`}>
-        <strong>Save this page for offline.</strong> While you still have signal, save it in your
-        browser or print it (Print to PDF works). Printing gives a one-page card of the
-        &ldquo;During&rdquo; steps.
+      <p className={styles.danger} role="note">
+        In an emergency, call your local emergency number first. Do not wait for this app.
       </p>
 
-      <ol className={styles.phases} aria-label="Flood safety by phase, most urgent first">
+      <GuideVideo />
+
+      <ol className={styles.phases} aria-label="Flood safety by phase">
         {PHASES.map((phase) => (
-          <li
-            key={phase.id}
-            id={phase.id}
-            className={`${styles.phase} ${phase.id === 'during' ? styles.urgent : ''}`}
-          >
+          <li key={phase.id} className={styles.phase}>
             <div className={styles.phaseHead}>
               <h2 className={styles.phaseTitle}>{phase.title}</h2>
-              <p className={styles.phaseTheme}>{phase.theme}</p>
               <p className={styles.phaseLead}>{phase.lead}</p>
             </div>
             <ul className={styles.tips}>
@@ -112,43 +89,15 @@ export default function GuidePage() {
         ))}
       </ol>
 
-      <section id="mountain" className={styles.section} aria-labelledby="mountain-title">
-        <h2 id="mountain-title" className={styles.sectionTitle}>
-          Mountain floods: GLOF and debris flows
-        </h2>
-        <p className={styles.note}>
-          In steep valleys a glacial lake outburst flood (GLOF) or a debris flow can arrive in
-          minutes, carrying mud and boulders. River gauges may show nothing first.
-        </p>
-        <ul className={styles.plain}>
-          {MOUNTAIN_TIPS.map((tip) => (
-            <li key={tip.text}>
-              {tip.text}
-              <Cite id={tip.source} />
-              {tip.why && <span className={styles.why}>{tip.why}</span>}
-            </li>
-          ))}
-        </ul>
-        <p className={styles.note}>
-          See how this played out in Rasuwa: <Link href="/nepal">Nepal, 26 August 2026</Link>.
-        </p>
-      </section>
-
       <section className={styles.section} aria-labelledby="water-title">
         <h2 id="water-title" className={styles.sectionTitle}>
           Vehicles and water
         </h2>
-        <p className={styles.phaseTheme}>Tie yourself to the mast</p>
-        <p className={styles.note}>
-          Turn Around, Don&apos;t Drown. The Sirens&apos; song here is the urge to drive into
-          &ldquo;only a little&rdquo; water. Decide now, before the storm, that you will turn
-          around.
-        </p>
         <StatList items={WATER_DEPTHS} label="Water depth and danger" />
         <p className={styles.note}>
-          Depths for vehicles differ a little between sources (the Red Cross says 12 inches can
-          carry a vehicle away), and water may be deeper than it looks. The safe rule is the same
-          everywhere: turn around, do not drive or walk into floodwater.
+          Depths for vehicles differ a little between National Weather Service offices, and fast
+          water is more dangerous than still water. The safe rule is the same everywhere: turn
+          around, do not drive or walk into floodwater.
         </p>
       </section>
 
@@ -194,10 +143,6 @@ export default function GuidePage() {
         </p>
       </section>
 
-      <div className={styles.section}>
-        <GuideVideo />
-      </div>
-
       <section className={styles.section} aria-labelledby="sources-title">
         <h2 id="sources-title" className={styles.sectionTitle}>
           Sources
@@ -208,12 +153,6 @@ export default function GuidePage() {
               <a href={source.url}>{source.name}</a>. {source.note} Checked {CHECKED_ON}.
             </li>
           ))}
-          <li>
-            <a href="https://www.nepalpolice.gov.np/stations/emergency-contacts/">
-              Nepal Police: Emergency contacts
-            </a>
-            . Police control: 100. Checked {CHECKED_ON}.
-          </li>
           <li>
             <a
               href="https://www.youtube.com/watch?v=rV1iqRD9EKY"

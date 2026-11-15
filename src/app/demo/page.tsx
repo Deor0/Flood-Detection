@@ -45,8 +45,7 @@ export default function Page() {
       <div className={styles.header}>
         <h1 className={styles.title}>Flood desk demo</h1>
         <p className={styles.lede}>
-          Demo with saved data. To click any river live, open the{' '}
-          <Link href="/dashboard">flood desk</Link> (no account needed) or{' '}
+          Demo with saved data. Sign in to click any river. <Link href="/sign-in">Sign in</Link> or{' '}
           <Link href="/">go back home</Link>.
         </p>
       </div>
@@ -63,8 +62,7 @@ async function Desk() {
   if (!index) {
     return (
       <p className={styles.muted}>
-        The saved demo data is not available. The live flood desk at /dashboard works without an
-        account.
+        The saved demo data is not available. Sign in to use the live flood desk.
       </p>
     );
   }

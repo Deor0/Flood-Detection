@@ -50,7 +50,7 @@ export async function fetchTileRgba(url: string, signal?: AbortSignal): Promise<
   return ctx.getImageData(0, 0, TILE, TILE).data;
 }
 
-/** Default loader: our own elevation proxy (public, cached). */
+/** Default loader: our own signed-in elevation proxy. */
 export const defaultTileLoader: TileLoader = (z, x, y, signal) =>
   fetchTileRgba(`/api/dem?z=${z}&x=${x}&y=${y}`, signal);
 
@@ -119,33 +119,6 @@ async function stitchTerrain(
     minY,
     bounds: [south, west, north, east],
   };
-}
-
-/** Grid pixel of a point inside a prepared window (exact in web Mercator), or null outside it. */
-export function pixelOf(
-  terrain: Pick<TerrainHandle, 'width' | 'height' | 'geo'>,
-  lat: number,
-  lng: number,
-): { x: number; y: number } | null {
-  const { minX, minY, z } = terrain.geo;
-  const n = 2 ** z;
-  const tx = ((lng + 180) / 360) * n;
-  const r = (lat * Math.PI) / 180;
-  const ty = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
-  const x = Math.round((tx - minX) * TILE);
-  const y = Math.round((ty - minY) * TILE);
-  if (!(x >= 0 && y >= 0 && x < terrain.width && y < terrain.height)) return null;
-  return { x, y };
-}
-
-/** Centre of a grid pixel as latitude and longitude. */
-export function latLngOf(
-  terrain: Pick<TerrainHandle, 'geo'>,
-  x: number,
-  y: number,
-): { lat: number; lng: number } {
-  const { minX, minY, z } = terrain.geo;
-  return { lat: tileLat(minY + (y + 0.5) / TILE, z), lng: tileLng(minX + (x + 0.5) / TILE, z) };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -28,7 +28,7 @@ export default function HeroBackdrop() {
           />
         ) : image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className={styles.fill} src={image} alt="" />
+          <img className={styles.fill} src={image} alt="" fetchPriority="high" />
         ) : (
           <div className={styles.art}>
             <HeroArt className={styles.artSvg} />

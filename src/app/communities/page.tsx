@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { Suspense } from 'react';
 import { PROGRAM_CATEGORIES } from '@/db/schema';
-import { CATEGORY_LABELS, CATEGORY_THEMES } from '@/core/programs/categories';
+import { CATEGORY_LABELS } from '@/core/programs/categories';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { SignInLink } from '@/components/SignInLink';
 import styles from '@/components/page-ui.module.css';
@@ -11,8 +11,6 @@ import { ProgramResults } from './ProgramResults';
 import { appTimeZone } from '@/lib/time';
 import { HostForm } from './ProgramForms';
 import { MyPrograms } from './MyPrograms';
-import { MyRegistrations } from './MyRegistrations';
-import local from './programs.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,12 +37,10 @@ export default async function CommunitiesPage({
     <main className={styles.page}>
       <div className={styles.header}>
         <div>
-          <p className={local.kicker}>Open Doors</p>
           <h1 className={styles.title}>Community Awareness Programs</h1>
           <p className={styles.lede}>
-            Shelter, supplies, rides and cleanup crews offered by neighbors, plus preparedness
-            drills, first-aid workshops and volunteer briefings — each reviewed by our team. Like
-            Eumaeus taking in a stranger at his door, open yours to someone the water has displaced.
+            Disaster preparedness drills, first-aid workshops, flood safety sessions, and emergency
+            volunteer briefings reviewed by our team.
           </p>
         </div>
       </div>
@@ -62,8 +58,7 @@ export default async function CommunitiesPage({
           <details className={styles.panel}>
             <summary>+ Host / Register Program</summary>
             <p className={styles.lede}>
-              New programs are submitted for review and listed once an admin approves them. Offer
-              shelter, supplies, a ride or a cleanup crew, or run a drill or workshop.
+              New programs are submitted for review and listed once an admin approves them.
             </p>
             <HostForm timeZone={appTimeZone()} />
           </details>
@@ -74,15 +69,11 @@ export default async function CommunitiesPage({
         <MyPrograms />
       </Suspense>
 
-      <Suspense fallback={null}>
-        <MyRegistrations />
-      </Suspense>
-
       <form method="get" className={styles.search} role="search">
         {category && <input type="hidden" name="category" value={category} />}
         <label className={styles.searchBox}>
           <Search size={18} aria-hidden="true" />
-          <span className={local.srOnly}>Search programs</span>
+          <span style={{ position: 'absolute', left: '-9999px' }}>Search programs</span>
           <input
             type="search"
             name="q"
@@ -111,7 +102,6 @@ export default async function CommunitiesPage({
             href={href(c)}
             className={`${styles.chip} ${category === c ? styles.chipActive : ''}`}
             aria-current={category === c ? 'true' : undefined}
-            title={CATEGORY_THEMES[c]}
           >
             {CATEGORY_LABELS[c]}
           </Link>

@@ -15,10 +15,7 @@ export function Disclaimers() {
         <li>
           Water depth comes from an assumed channel roughness (adjustable in the scenario panel) and
           a slope read from the terrain. Bankfull, the level where a river leaves its banks, is
-          estimated and not surveyed, so depths are a likely range, not a measurement. The terrain
-          already shows the river at its normal flow, so the map draws only the rise above the
-          river&apos;s long-term average level. &ldquo;Nearest high ground&rdquo; is a straight-line
-          estimate from the same terrain, not a route.
+          estimated and not surveyed, so depths are a likely range, not a measurement.
         </li>
         <li>Elevation is about 30 m resolution with errors of several metres.</li>
         <li>

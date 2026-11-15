@@ -75,8 +75,6 @@ export const missingPersonEvents = pgTable(
         'edit_requested',
         'edit_approved',
         'edit_rejected',
-        /** A non-reporter said the person is safe; the reporter or an admin confirms it. */
-        'found_claimed',
       ],
     }).notNull(),
     /** Why (required for re-open and rejections). */
@@ -107,11 +105,6 @@ export const PROGRAM_CATEGORIES = [
   'volunteer_briefing',
   'evacuation_drill',
   'water_sanitation',
-  // Flood mutual aid (TS-only enum values; the column is plain text, so no migration).
-  'shelter',
-  'supplies',
-  'rides',
-  'cleanup_crew',
 ] as const;
 export type ProgramCategory = (typeof PROGRAM_CATEGORIES)[number];
 
