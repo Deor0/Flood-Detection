@@ -1,12 +1,16 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
+import { Suspense } from 'react';
 import { HelplineNote } from '@/components/HelplineNote';
 import { StaggerReveal } from '@/components/motion/StaggerReveal';
 import FeatureMedia, { type ArtSlug } from './home-art/FeatureMedia';
 import HeroBackdrop from './home-art/HeroBackdrop';
+import { ReunionCount, ReunionFallback } from './home-art/ReunionCount';
 import styles from './landing.module.css';
 
 export const metadata = {
-  title: 'Flood Response: a flood desk and a way to find each other',
+  // The home page names the brand itself, so it skips the "%s · Poseidon Surge" template.
+  title: { absolute: 'Poseidon Surge: check your river, find your people' },
   description:
     'Click a river anywhere in the world to see if it is higher than normal, simulate where the water could go, and search a registry of missing people, online or by phone call and text with no internet.',
 };
@@ -72,11 +76,29 @@ const NEPAL = [
 ] as const;
 
 const SHORTCUTS = [
-  { href: '/dashboard', title: 'Flood desk', text: 'Is a river high today?' },
-  { href: '/find', title: 'Find each other', text: 'Search the registry' },
-  { href: '/sms-simulator', title: 'Offline Helpline', text: 'Call or text, no internet' },
-  { href: '/guide', title: 'Flood guide', text: 'What to do, step by step' },
+  {
+    href: '/dashboard',
+    title: 'Flood desk',
+    theme: 'Watch the sea',
+    text: 'Is a river high today?',
+  },
+  { href: '/find', title: 'Find each other', theme: 'Find your crew', text: 'Search the registry' },
+  {
+    href: '/sms-simulator',
+    title: 'Offline Helpline',
+    theme: 'The Beacon Line',
+    text: 'Call or text, no internet',
+  },
+  {
+    href: '/guide',
+    title: 'Flood guide',
+    theme: "Circe's Chart",
+    text: 'What to do, step by step',
+  },
 ] as const;
+
+/** Hero items animate with CSS only (no script), one after another by this index. */
+const heroItem = (i: number) => ({ 'data-reveal-css': '', style: { '--i': i } as CSSProperties });
 
 const AUDIENCES = [
   {
@@ -103,24 +125,27 @@ export default function Home() {
   return (
     <main className={styles.page}>
       <StaggerReveal>
-        <section className={styles.hero} aria-labelledby="hero-title" data-reveal-group>
+        <section className={styles.hero} aria-labelledby="hero-title">
           <HeroBackdrop />
           <div className={styles.heroInner}>
+            <p className={styles.kicker} {...heroItem(0)}>
+              Every family&apos;s road back to Ithaca.
+            </p>
             <h1 id="hero-title" className={styles.heading}>
-              <span className={styles.line} data-reveal>
+              <span className={styles.line} {...heroItem(1)}>
                 Check your river.
               </span>
-              <span className={styles.line} data-reveal>
+              <span className={styles.line} {...heroItem(2)}>
                 Find your people.
               </span>
-              <span className={styles.line} data-reveal>
+              <span className={styles.line} {...heroItem(3)}>
                 Know what to do.
               </span>
             </h1>
-            <p className={styles.lede} data-reveal>
+            <p className={styles.lede} {...heroItem(4)}>
               Welcome. Floods are frightening, so we keep the facts plain and in one place.
             </p>
-            <div className={styles.actions} data-reveal>
+            <div className={styles.actions} {...heroItem(5)}>
               <Link href="/dashboard" className={styles.primary}>
                 Check a river
               </Link>
@@ -130,7 +155,7 @@ export default function Home() {
               <Link href="/demo" className={styles.quiet}>
                 Try the demo
               </Link>
-              <Link href="/sign-in" className={styles.quiet}>
+              <Link href="/sign-in?redirect_url=%2Fdashboard" className={styles.quiet}>
                 Sign in
               </Link>
             </div>
@@ -143,12 +168,19 @@ export default function Home() {
               <li key={item.href} data-reveal>
                 <Link href={item.href} className={styles.shortcut}>
                   <strong>{item.title}</strong>
+                  <span className={styles.shortcutTheme}>{item.theme}</span>
                   <span>{item.text}</span>
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
+
+        <section className={styles.reunionStrip} aria-label="Reunions">
+          <Suspense fallback={<ReunionFallback />}>
+            <ReunionCount />
+          </Suspense>
+        </section>
 
         <section className={styles.audience} aria-labelledby="audience-title" data-reveal-group>
           <div className={styles.band}>

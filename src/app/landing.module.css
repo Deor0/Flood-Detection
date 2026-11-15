@@ -480,3 +480,58 @@
     gap: var(--s5);
   }
 }
+
+/* ---------- reunion counter: one quiet line under the shortcut strip ---------- */
+.reunionStrip {
+  max-width: 72rem;
+  margin: var(--s4) auto 0;
+  padding: 0 var(--s3);
+}
+
+.reunion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s3);
+  margin: 0;
+  padding: var(--s3);
+  background: var(--ok-bg);
+  border-left: 4px solid var(--ok);
+  color: var(--ok-ink);
+}
+
+.reunion strong {
+  font-size: 1.05rem;
+}
+
+.reunionTheme {
+  font-style: italic;
+}
+
+.reunionLink {
+  margin-left: auto;
+  color: var(--ok-ink);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.reunionLink:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ---------- Odyssey kicker above the hero heading ---------- */
+.kicker {
+  margin: 0 0 var(--s3);
+  color: #9fe4f5;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shortcut .shortcutTheme {
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-style: italic;
+}

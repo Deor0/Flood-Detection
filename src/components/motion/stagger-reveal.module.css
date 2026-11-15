@@ -15,8 +15,29 @@
   }
 }
 
+/*
+ * Hero items (`[data-reveal-css]`, with `--i` as their position) never wait for the script: a
+ * CSS-only cascade starts on first paint. They are not hidden by `pending` and GSAP ignores them.
+ */
+.root [data-reveal-css] {
+  animation: hero-rise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .pending [data-reveal] {
+  .pending [data-reveal],
+  .root [data-reveal-css] {
     opacity: 1;
     animation: none;
   }
