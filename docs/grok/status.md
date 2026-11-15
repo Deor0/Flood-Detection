@@ -1,5 +1,10 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (fix: /communities hung for signed-in users; real cause of the earlier hangs)
+
+- Signed in, `/communities` stayed on "Loading records" (signed out it worked). Reproduced against Supabase: with `max: 1`, postgres-js pipelines concurrent queries on one connection, and through Supavisor's transaction mode they never answer (3 concurrent queries: hang with max 1, ~0.3 s with max 5). Signed-in `/communities` runs `listPrograms` and `listMyPrograms` in parallel. This, not frozen instances, was also the likely cause of the earlier "everything hangs" after the `max: 1` change.
+- `src/db/index.ts`: per-request client now `max: 5`. Tests 84/86 (known two), lint and build ok.
+
 ## 2026-11-15 · Claude (security: Supabase Data API exposed every table)
 
 - Audit (Supabase skills, read-only): RLS was off on all `public` tables and `anon`/`authenticated` had full rights (incl. DELETE/TRUNCATE). Confirmed with the publishable key: Supabase REST returned `missing_persons` (17 rows, incl. contact) and `sms_log` (23). Supabase default privileges would expose new tables too.
