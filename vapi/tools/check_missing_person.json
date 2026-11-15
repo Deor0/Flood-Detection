@@ -1,0 +1,22 @@
+{
+  "type": "function",
+  "async": false,
+  "name": "check_missing_person",
+  "description": "Checks the emergency registry for a missing person by name to see if they are reported missing or have been found safe.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "The full or partial name of the person to look up"
+      }
+    },
+    "required": ["name"]
+  },
+  "server": {
+    "url": "https://www.poseidonsurge.surf/api/postsms",
+    "headers": {
+      "Bypass-Tunnel-Reminder": "true"
+    }
+  }
+}

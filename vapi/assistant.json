@@ -1,0 +1,29 @@
+{
+  "name": "HydroRescue Dispatch",
+  "firstMessage": "Poseidon Surge Emergency Flood Helpline. Are you calling to check if someone is safe, or to report a missing person?",
+  "firstMessageMode": "assistant-speaks-first",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4.1",
+    "messages": [
+      {
+        "role": "system",
+        "content": "{{SYSTEM_PROMPT}}"
+      }
+    ],
+    "toolIds": []
+  },
+  "voice": {
+    "provider": "11labs",
+    "voiceId": "cjVigY5qzO86Huf0OWal"
+  },
+  "transcriber": {
+    "provider": "soniox",
+    "model": "stt-rt-v5"
+  },
+  "serverMessages": [
+    "tool-calls",
+    "status-update",
+    "end-of-call-report"
+  ]
+}
