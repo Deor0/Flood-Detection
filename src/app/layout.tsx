@@ -8,7 +8,26 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import './globals.css';
 
-export const metadata: Metadata = { title: 'Flood Response' };
+const DESCRIPTION =
+  'Check if a river is higher than normal, see where the water could go, and find missing family and friends, online or by call and text with no internet.';
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.poseidonsurge.surf'),
+  title: { default: 'Poseidon Surge', template: '%s · Poseidon Surge' },
+  description: DESCRIPTION,
+  applicationName: 'Poseidon Surge',
+  openGraph: {
+    type: 'website',
+    siteName: 'Poseidon Surge',
+    title: 'Poseidon Surge — find your way home',
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Poseidon Surge — find your way home',
+    description: DESCRIPTION,
+  },
+};
 
 // Clerk's profile menu follows the same ocean, royal and cyan palette as the rest of the app.
 const clerkAppearance = {

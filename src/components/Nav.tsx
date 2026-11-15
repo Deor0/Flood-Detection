@@ -11,7 +11,7 @@ const TABS = [
   { href: '/missing', label: 'Missing People' },
   { href: '/communities', label: 'Communities' },
   { href: '/guide', label: 'Flood Guide' },
-  { href: '/sms-simulator', label: 'SMS Simulator' },
+  { href: '/sms-simulator', label: 'Offline Helpline' },
 ] as const;
 
 /**

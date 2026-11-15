@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useId, useState, type FormEvent, type InputHTMLAttributes } from 'react';
 import { useSignUp } from '@clerk/nextjs';
-import { Lock, Mail, Server, ShieldCheck, User } from 'lucide-react';
+import { KeyRound, Lock, Mail, User } from 'lucide-react';
 import {
   MIN_PASSWORD_LENGTH,
   destinationAfterAuth,
@@ -12,7 +12,14 @@ import {
   type SignUpField,
   type SignUpValues,
 } from '@/lib/auth-forms';
-import { Field, FormError, PasswordToggle, SubmitButton, type Status } from './AuthShared';
+import {
+  Field,
+  FormError,
+  PasswordToggle,
+  SubmitButton,
+  useAuthSwitchHref,
+  type Status,
+} from './AuthShared';
 import styles from './auth.module.css';
 
 type TextKey = Exclude<SignUpField, 'consent'>;
@@ -32,6 +39,12 @@ export function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
+  // Production Clerk requires a verified email: after the details step we ask for the emailed code.
+  const [step, setStep] = useState<'details' | 'code'>('details');
+  const [code, setCode] = useState('');
+  const [codeError, setCodeError] = useState<string>();
+  const [resent, setResent] = useState(false);
+  const signInHref = useAuthSwitchHref('/sign-in');
 
   const set = <K extends SignUpField>(key: K, value: SignUpValues[K]) =>
     setValues((v) => ({ ...v, [key]: value }));
@@ -48,8 +61,8 @@ export function SignUpForm() {
       emailAddress: values.email.trim(),
       password: values.password,
       ...splitName(values.name),
-      // Client-side record of the SMS/email consent the user just gave.
-      unsafeMetadata: { smsEmailConsentAt: new Date().toISOString() },
+      // Client-side record of when the user agreed to account emails.
+      unsafeMetadata: { emailConsentAt: new Date().toISOString() },
     });
     if (error) {
       setFormError(error.longMessage ?? error.message ?? 'Could not create the account.');
@@ -57,6 +70,11 @@ export function SignUpForm() {
       return;
     }
 
+    await afterStep();
+  }
+
+  /** Finish if Clerk is done, ask for the email code if that is what is missing, else explain. */
+  async function afterStep() {
     if (signUp.status === 'complete') {
       setStatus('success');
       await signUp.finalize({
@@ -73,9 +91,48 @@ export function SignUpForm() {
       return;
     }
 
-    // Clerk still wants something (for example a verification step we do not offer yet).
+    if (step === 'details' && signUp.unverifiedFields.includes('email_address')) {
+      const sent = await signUp.verifications.sendEmailCode();
+      if (sent.error) {
+        setFormError(sent.error.longMessage ?? sent.error.message ?? 'Could not send the code.');
+        setStatus('error');
+        return;
+      }
+      setStatus('idle');
+      setStep('code');
+      return;
+    }
+
     setFormError('Clerk needs more information to finish sign-up. Check the Clerk settings.');
     setStatus('error');
+  }
+
+  async function verify(e: FormEvent) {
+    e.preventDefault();
+    setFormError(undefined);
+    setCodeError(undefined);
+    if (!code.trim()) {
+      setCodeError('Enter the code from your email.');
+      return;
+    }
+    setStatus('loading');
+    const { error } = await signUp.verifications.verifyEmailCode({ code: code.trim() });
+    if (error) {
+      setFormError(error.longMessage ?? error.message ?? 'That code did not work. Try again.');
+      setStatus('error');
+      return;
+    }
+    await afterStep();
+  }
+
+  async function resend() {
+    setFormError(undefined);
+    const { error } = await signUp.verifications.sendEmailCode();
+    if (error) {
+      setFormError(error.longMessage ?? error.message ?? 'Could not send the code.');
+      return;
+    }
+    setResent(true);
   }
 
   const input = (key: TextKey, props: InputHTMLAttributes<HTMLInputElement>) => (
@@ -99,95 +156,116 @@ export function SignUpForm() {
   return (
     <div className={`${styles.shell} ${styles.wide}`}>
       <div className={styles.head}>
-        <span className={styles.badge}>IDENTITY AUTHORIZATION</span>
+        <span className={styles.badge}>JOIN THE CREW</span>
         <h1 className={styles.heading}>CREATE ACCOUNT</h1>
         <p className={styles.subtitle}>
-          Register for Crisis Response operations or volunteer network
+          {step === 'details'
+            ? 'An account lets you report missing people, mark them found and host programs.'
+            : `Check your email. Enter the code we sent to ${values.email.trim()}.`}
         </p>
       </div>
 
-      <form onSubmit={submit} noValidate className={`${styles.card} ${styles.form}`}>
-        <FormError message={formError} />
-        <Field label="Full name" icon={User} {...fieldProps('name')}>
-          {input('name', { autoComplete: 'name', autoFocus: true })}
-        </Field>
-        <Field label="Email address" icon={Mail} {...fieldProps('email')}>
-          {input('email', { type: 'email', autoComplete: 'email' })}
-        </Field>
-        <div className={styles.twoCol}>
+      {step === 'code' ? (
+        <form onSubmit={verify} noValidate className={`${styles.card} ${styles.form}`}>
+          <FormError message={formError} />
           <Field
-            label="Password"
-            icon={Lock}
-            {...fieldProps('password')}
-            trailing={
-              <PasswordToggle shown={showPassword} onToggle={() => setShowPassword((s) => !s)} />
-            }
+            label="Verification code"
+            icon={KeyRound}
+            error={codeError}
+            htmlFor={`${uid}-code`}
+            errorId={`${uid}-code-err`}
           >
-            {input('password', {
-              type: showPassword ? 'text' : 'password',
-              autoComplete: 'new-password',
-            })}
-          </Field>
-          <Field
-            label="Confirm password"
-            icon={Lock}
-            {...fieldProps('confirmPassword')}
-            trailing={
-              <PasswordToggle shown={showConfirm} onToggle={() => setShowConfirm((s) => !s)} />
-            }
-          >
-            {input('confirmPassword', {
-              type: showConfirm ? 'text' : 'password',
-              autoComplete: 'new-password',
-            })}
-          </Field>
-        </div>
-        <p className={styles.note}>
-          At least {MIN_PASSWORD_LENGTH} characters, with a letter and a number.
-        </p>
-
-        <div>
-          <label className={styles.consent}>
             <input
-              type="checkbox"
-              checked={values.consent}
-              onChange={(e) => set('consent', e.target.checked)}
-              aria-invalid={!!errors.consent}
-              aria-describedby={errors.consent ? `${uid}-consent-err` : undefined}
+              id={`${uid}-code`}
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              aria-invalid={!!codeError}
+              aria-describedby={codeError ? `${uid}-code-err` : undefined}
+              className={styles.input}
             />
-            <span>
-              I agree to emergency communication, mission telemetry broadcasts, and disaster alert
-              notifications via SMS and email.
-            </span>
-          </label>
-          {errors.consent && (
-            <p id={`${uid}-consent-err`} role="alert" className={styles.error}>
-              {errors.consent}
-            </p>
-          )}
-        </div>
+          </Field>
+          <SubmitButton status={status} busyLabel="VERIFYING…">
+            VERIFY EMAIL
+          </SubmitButton>
+          <button type="button" className={styles.link} onClick={resend}>
+            {resent ? 'Code sent again. Send another' : 'Send the code again'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={submit} noValidate className={`${styles.card} ${styles.form}`}>
+          <FormError message={formError} />
+          <Field label="Full name" icon={User} {...fieldProps('name')}>
+            {input('name', { autoComplete: 'name', autoFocus: true })}
+          </Field>
+          <Field label="Email address" icon={Mail} {...fieldProps('email')}>
+            {input('email', { type: 'email', autoComplete: 'email' })}
+          </Field>
+          <div className={styles.twoCol}>
+            <Field
+              label="Password"
+              icon={Lock}
+              {...fieldProps('password')}
+              trailing={
+                <PasswordToggle shown={showPassword} onToggle={() => setShowPassword((s) => !s)} />
+              }
+            >
+              {input('password', {
+                type: showPassword ? 'text' : 'password',
+                autoComplete: 'new-password',
+              })}
+            </Field>
+            <Field
+              label="Confirm password"
+              icon={Lock}
+              {...fieldProps('confirmPassword')}
+              trailing={
+                <PasswordToggle shown={showConfirm} onToggle={() => setShowConfirm((s) => !s)} />
+              }
+            >
+              {input('confirmPassword', {
+                type: showConfirm ? 'text' : 'password',
+                autoComplete: 'new-password',
+              })}
+            </Field>
+          </div>
+          <p className={styles.note}>
+            At least {MIN_PASSWORD_LENGTH} characters, with a letter and a number.
+          </p>
 
-        {/* Clerk's bot protection renders here. */}
-        <div id="clerk-captcha" />
-        <SubmitButton status={status} busyLabel="CREATING…">
-          CREATE ACCOUNT
-        </SubmitButton>
-        <p className={styles.switch}>
-          Already have an account? <Link href="/sign-in">SIGN IN</Link>
-        </p>
-      </form>
+          <div>
+            <label className={styles.consent}>
+              <input
+                type="checkbox"
+                checked={values.consent}
+                onChange={(e) => set('consent', e.target.checked)}
+                aria-invalid={!!errors.consent}
+                aria-describedby={errors.consent ? `${uid}-consent-err` : undefined}
+              />
+              <span>
+                I agree to receive emails about my account and the records I report. No marketing.
+              </span>
+            </label>
+            {errors.consent && (
+              <p id={`${uid}-consent-err`} role="alert" className={styles.error}>
+                {errors.consent}
+              </p>
+            )}
+          </div>
 
-      <ul className={styles.badges} aria-label="Security indicators">
-        <li>
-          <Lock size={14} aria-hidden="true" /> 256-BIT ENCRYPTED
-        </li>
-        <li>
-          <ShieldCheck size={14} aria-hidden="true" /> IDENTITY VERIFIED
-        </li>
-        <li>
-          <Server size={14} aria-hidden="true" /> HIGH AVAILABILITY
-        </li>
-      </ul>
+          {/* Clerk's bot protection renders here. */}
+          <div id="clerk-captcha" />
+          <SubmitButton status={status} busyLabel="CREATING…">
+            CREATE ACCOUNT
+          </SubmitButton>
+          <p className={styles.switch}>
+            Already have an account? <Link href={signInHref}>RETURN TO THE DESK</Link>
+          </p>
+        </form>
+      )}
     </div>
   );
 }

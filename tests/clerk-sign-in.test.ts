@@ -75,7 +75,7 @@ describe('Clerk sign-in and sign-up pages', () => {
   it('offers sign-in and a way to create an account', () => {
     const html = renderToStaticMarkup(createElement(SignInPage));
 
-    expect(html).toContain('FLOOD RESPONSE');
+    expect(html).toContain('POSEIDON SURGE');
     expect(html).toContain('SIGN IN');
     expect(html).toContain('href="/sign-up"');
   });
