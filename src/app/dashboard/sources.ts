@@ -27,7 +27,6 @@ export const liveSource: FloodSource = {
   async loadFlood(lat, lng, signal) {
     const res = await fetch(`/api/flood?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}`, { signal });
     if (!res.ok) {
-      if (res.status === 401) throw new Error('Sign in to look up live river data.');
       // The server explains itself (for example a rate limit); show that, not just the number.
       const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
       const reason = typeof body?.error === 'string' ? body.error : null;
