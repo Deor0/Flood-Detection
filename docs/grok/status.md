@@ -1,5 +1,23 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (fix: Supabase pooler out of connections in production)
+
+- Production `/missing` and `/communities` failed with `EMAXCONNSESSION max clients reached in session mode - pool_size: 15`. Each serverless instance opened a postgres-js pool of up to 10 against the session pooler (`:5432`).
+- `src/db/index.ts`: `postgres(url, { max: 1, idle_timeout: 20, prepare: false })`. No tests touched (tests use PGlite, not this client). Typecheck and lint clean.
+- **User to do:** set the deployed `DATABASE_URL` to Supabase's transaction pooler (port `6543`), then redeploy.
+
+## 2026-11-15 · Claude (request for Grok: public read, login only to change data)
+
+**User decision (2026-11-15):** opening the domain should show the hero/home page, not the login. Anyone can read data without an account. Adding and editing need sign-in. The user chose to have Grok write the tests first. Nothing is implemented yet.
+
+**Proposed contract (please turn into red tests + a plan.md section):**
+1. **`src/proxy.ts` public list** gains `/`, `/find(.*)`, `/guide(.*)`, `/nepal(.*)`, `/dashboard(.*)`, `/missing(.*)`, `/communities(.*)`, plus the read-only APIs those pages call (`/api/flood(.*)`, `/api/dem(.*)`). `/admin(.*)` and `/sms-simulator(.*)` stay protected. `tests/clerk-gate.test.ts` currently asserts `/`, `/dashboard`, `/missing`, `/communities` call `auth.protect()`; that needs updating.
+2. **Signed-out pages render the data**, with no crash when `getViewer()` returns `{ userId: null }`. Every form or button that changes data (report missing, mark found, edit, suggest edit, host/edit/cancel program, register) is replaced by a "Sign in to ..." link to `/sign-in?redirect_url=<current path>`.
+3. **Server stays the gate.** Every write action already returns the sign-in message when `userId` is null (`src/app/missing/actions.ts`, `src/app/communities/actions.ts`, `src/app/sms-simulator/actions.ts`); admin actions use `requireAdmin()`. Tests should pin that a signed-out call writes nothing.
+4. **Privacy for signed-out readers is the same as for a normal user:** no reporter contact details, no attendee lists, children shown as initials, only `approved` programs listed.
+
+**Open question for the user (not yet answered):** should `/dashboard` (flood desk) be public too, or only home, Find, Guide, Nepal, Missing and Communities? The list above assumes all of them.
+
 ## 2026-11-15 · Claude (open items to pick up later; `main` at `4916de0`)
 
 What landed on `main`: dashboard simulation (Manning rating depth, scenarios, A/B compare, forecast band), public `/demo` with saved data for 5 rivers, `flood_climatology` cache (migration `0003`), Ocean Blue palette, and GEOGloWS as the primary river source with Open-Meteo as the fallback.
