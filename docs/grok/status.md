@@ -4,7 +4,7 @@
 
 - Audit (Supabase skills, read-only): RLS was off on all `public` tables and `anon`/`authenticated` had full rights (incl. DELETE/TRUNCATE). Confirmed with the publishable key: Supabase REST returned `missing_persons` (17 rows, incl. contact) and `sms_log` (23). Supabase default privileges would expose new tables too.
 - Fix: `.enableRLS()` on every table in `src/db/schema.ts` → generated `0004_enable_rls.sql`; custom `0005_revoke_data_api_roles.sql` revokes table/sequence/function rights and default privileges from `anon`/`authenticated` (skipped where the roles don't exist, e.g. PGlite). The app connects as `postgres` (BYPASSRLS, table owner), so its queries are unaffected; no policies needed because the app never uses the Data API.
-- Dry run on Supabase in a rolled-back transaction (0002-0005): all tables RLS on, anon/authenticated no rights, app still reads 17 people / 5 programs. Tests 84/86 (known two), lint 0 errors. **Not applied yet: waiting for the user** (applies 0002 and 0003 too).
+- Dry run on Supabase in a rolled-back transaction (0002-0005): all tables RLS on, anon/authenticated no rights, app still reads 17 people / 5 programs. Tests 84/86 (known two), lint 0 errors. **Applied 2026-11-15 with the user's approval** (`pnpm db:migrate` via the session pooler; 0002-0005, 6 migrations recorded). Verified: Supabase REST now returns 42501 for every table with the public key; the live site still shows 17 people and 5 programs.
 - `.env.example` now points at the transaction pooler (6543).
 
 ## 2026-11-15 · Claude (fix: production data pages hung forever)
