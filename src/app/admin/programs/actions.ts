@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
 import { approveProgram, cancelProgram, editProgram, rejectProgram } from '@/core/programs/service';
+import { composeReason } from '@/core/admin/reasons';
 import { requireAdmin } from '@/lib/roles';
 import type { FormState } from '@/app/form-state';
 
@@ -27,7 +28,7 @@ const REVIEW_REFUSALS = {
   forbidden: DENIED,
   not_found: 'That program no longer exists.',
   not_pending: 'This program was already reviewed.',
-  invalid: 'Give a reason of 3 to 500 characters.',
+  invalid: 'Pick a common reason or write one (3 to 500 characters).',
 } as const;
 
 export async function approveProgramAction(programId: string): Promise<FormState> {
@@ -57,7 +58,7 @@ export async function rejectProgramAction(
       getDb(),
       { userId: g.userId, isAdmin: true },
       programId,
-      text(fd, 'reason'),
+      composeReason('program', text(fd, 'reasonTemplate'), text(fd, 'reason')),
     );
     refresh();
     return r.ok

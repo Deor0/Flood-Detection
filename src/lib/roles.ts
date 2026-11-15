@@ -16,7 +16,16 @@ export function isAdminClaims(claims: RoleClaims): boolean {
 
 /**
  * Who is looking. Uses the `metadata.role` session claim when the Clerk session token is set up to
- * carry it; otherwise falls back to one Clerk Backend lookup (cached per request).
+ * carry it; otherwise falls back to one Clerk Backend lookup.
+ *
+ * Set up the claim (Clerk dashboard → Sessions → Customize session token) with
+ *   { "metadata": "{{user.public_metadata}}" }
+ * so every signed-in request is answered from the token, with no Backend API call. Without it,
+ * each request costs one `users.getUser` call. Either way it stays fail-closed: a failed lookup
+ * means "not admin".
+ *
+ * Wrapped in React `cache`, so the lookup runs at most once per request even when the layout,
+ * the page and several server components all ask.
  */
 export const getViewer = cache(async (): Promise<Viewer> => {
   let session: Awaited<ReturnType<typeof auth>>;

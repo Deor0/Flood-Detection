@@ -9,6 +9,7 @@ import {
 } from '@/core/missing/service';
 import styles from '@/components/page-ui.module.css';
 import { timeAgo } from '@/lib/time';
+import { waitingLabel } from '@/core/admin/activity';
 import { AdminRecordActions, ReviewButtons } from './AdminMissingForms';
 import local from './admin-missing.module.css';
 
@@ -70,6 +71,7 @@ export async function EditRequestQueue() {
   if (items.length === 0)
     return <div className={styles.empty}>No suggested edits are waiting.</div>;
   const users = await resolveUsers(items.map((i) => i.request.submittedByUserId));
+  const now = new Date();
   return (
     <ul className={styles.list}>
       {items.map(({ request, person, diff, stale }) => (
@@ -77,12 +79,17 @@ export async function EditRequestQueue() {
           <h3 className={styles.personName}>{lastFirst(person.name)}</h3>
           <p className={styles.personMeta}>
             ID: #{publicId(person.publicNumber)} • Suggested by{' '}
-            {users.get(request.submittedByUserId) ?? request.submittedByUserId} •{' '}
-            {timeAgo(request.createdAt)}
+            {users.get(request.submittedByUserId) ?? 'an account that no longer resolves'} •{' '}
+            <strong>{waitingLabel(request.createdAt, now)}</strong>
           </p>
           {stale && (
             <p role="alert" className={local.warn}>
               This record changed since the suggestion was made. Check the current values below.
+              <br />
+              Athena&rsquo;s counsel: approving weaves in only the fields this person changed. If
+              someone changed the same field since, the newer value wins and that part of the
+              suggestion is skipped. If the record already says the right thing, reject with
+              &ldquo;Duplicate or already applied&rdquo;.
             </p>
           )}
           <table className={local.diff}>

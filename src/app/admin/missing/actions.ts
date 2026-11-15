@@ -8,6 +8,9 @@ import {
   rejectEditRequest,
   reopenMissing,
 } from '@/core/missing/service';
+import { bulkReopenFoundBy, previewFoundBy, validFilter } from '@/core/admin/bulkReopen';
+import { composeReason } from '@/core/admin/reasons';
+import { publicId } from '@/core/missing/names';
 import { requireAdmin } from '@/lib/roles';
 import type { FormState } from '@/app/form-state';
 
@@ -58,14 +61,14 @@ export async function rejectRequestAction(
       getDb(),
       { userId: admin.userId, isAdmin: true },
       requestId,
-      text(fd, 'reason'),
+      composeReason('edit', text(fd, 'reasonTemplate'), text(fd, 'reason')),
     );
     refresh();
     if (r.ok) return { ok: true, message: 'Rejected.' };
     return {
       message:
         r.reason === 'invalid'
-          ? 'Give a reason (3 to 500 characters).'
+          ? 'Pick a common reason or write one (3 to 500 characters).'
           : r.reason === 'not_pending'
             ? 'Someone already reviewed this request.'
             : r.reason === 'forbidden'
@@ -135,5 +138,64 @@ export async function adminReopenAction(
   } catch (err) {
     console.error('adminReopenAction failed', err);
     return { message: SERVER_ERROR };
+  }
+}
+
+export type BulkState = FormState & {
+  /** Set after a preview: what a confirmed run would re-open. */
+  preview?: { names: string[]; foundBy: string; since: string; reason: string };
+};
+
+/**
+ * Bulk re-open of records falsely marked found. Two steps: `mode=preview` lists the matches
+ * (read-only); `mode=confirm` re-opens them, each through the normal re-open path.
+ */
+export async function bulkReopenAction(_prev: BulkState, fd: FormData): Promise<BulkState> {
+  const admin = await requireAdmin();
+  if (!admin.ok) return { message: admin.reason === 'signed_out' ? SIGN_IN : FORBIDDEN };
+  const foundBy = text(fd, 'foundBy').trim();
+  const sinceRaw = text(fd, 'since').trim();
+  // datetime-local has no zone; the form says the time is UTC.
+  const since = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(sinceRaw) ? sinceRaw : `${sinceRaw}Z`);
+  const reason = text(fd, 'reason').trim();
+  if (!validFilter({ foundBy, since }))
+    return { message: 'Enter a Clerk user id (user_…) or a phone in +1… form, and a start time.' };
+  if (reason.length < 3 || reason.length > 480)
+    return { message: 'Give a reason (3 to 480 characters).' };
+  try {
+    if (text(fd, 'mode') !== 'confirm') {
+      const items = await previewFoundBy(getDb(), { foundBy, since });
+      if (items.length === 0) return { message: 'No found records match. Nothing would change.' };
+      return {
+        preview: {
+          names: items.map((i) => `${i.name} (#${publicId(i.publicNumber)})`),
+          foundBy,
+          since: since.toISOString(),
+          reason,
+        },
+      };
+    }
+    const r = await bulkReopenFoundBy(
+      getDb(),
+      { userId: admin.userId, isAdmin: true },
+      { foundBy, since, reason },
+    );
+    refresh();
+    if (r.ok)
+      return {
+        ok: true,
+        message: `Re-opened ${r.reopened.length} record${r.reopened.length === 1 ? '' : 's'}. Each one logs the reason in its history.`,
+      };
+    return {
+      message:
+        r.reason === 'nothing_to_reopen'
+          ? 'Nothing left to re-open: someone may have done it already.'
+          : r.reason === 'forbidden'
+            ? FORBIDDEN
+            : 'Check the fields and try again.',
+    };
+  } catch (err) {
+    console.error('bulkReopenAction failed', err);
+    return { message: `${SERVER_ERROR} Nothing was changed.` };
   }
 }

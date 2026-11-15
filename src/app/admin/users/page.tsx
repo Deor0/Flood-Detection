@@ -1,4 +1,5 @@
 import { clerkClient } from '@clerk/nextjs/server';
+import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ListSkeleton } from '@/components/ListSkeleton';
@@ -10,13 +11,19 @@ import styles from './users.module.css';
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 20;
 
-type Search = { page?: string | string[]; ok?: string | string[]; error?: string | string[] };
+type Search = {
+  page?: string | string[];
+  q?: string | string[];
+  ok?: string | string[];
+  error?: string | string[];
+};
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<Search> }) {
   const { userId: me } = await adminPageGuard();
   const sp = await searchParams;
   const page = Math.max(1, Number.parseInt(one(sp.page) ?? '1', 10) || 1);
+  const q = (one(sp.q) ?? '').trim().slice(0, 100);
   const ok = one(sp.ok)?.slice(0, 200);
   const error = one(sp.error)?.slice(0, 200);
   return (
@@ -37,8 +44,25 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
           {error}
         </p>
       )}
-      <Suspense key={page} fallback={<ListSkeleton />}>
-        <UserTable page={page} me={me} />
+      <form method="get" className={ui.search} role="search">
+        <label className={ui.searchBox}>
+          <Search size={18} aria-hidden="true" />
+          <span style={{ position: 'absolute', left: '-9999px' }}>Search by email</span>
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Search by email…"
+            className={ui.searchInput}
+            maxLength={100}
+          />
+        </label>
+        <button type="submit" className={ui.button}>
+          Search
+        </button>
+      </form>
+      <Suspense key={`${page}|${q}`} fallback={<ListSkeleton />}>
+        <UserTable page={page} me={me} q={q} />
       </Suspense>
     </main>
   );
@@ -46,18 +70,23 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
 
 function Confirm({
   label,
+  subtitle,
   warning,
   action,
   userId,
 }: {
   label: string;
+  subtitle?: string;
   warning: string;
   action: (fd: FormData) => Promise<void>;
   userId: string;
 }) {
   return (
     <details className={styles.confirm}>
-      <summary>{label}</summary>
+      <summary>
+        {label}
+        {subtitle && <span className={styles.sub}> · {subtitle}</span>}
+      </summary>
       <form action={action}>
         <input type="hidden" name="userId" value={userId} />
         <span className={styles.confirmText}>{warning}</span>
@@ -69,7 +98,7 @@ function Confirm({
   );
 }
 
-async function UserTable({ page, me }: { page: number; me: string }) {
+async function UserTable({ page, me, q }: { page: number; me: string; q: string }) {
   let data, total;
   try {
     const client = await clerkClient();
@@ -77,16 +106,26 @@ async function UserTable({ page, me }: { page: number; me: string }) {
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
       orderBy: '-created_at',
+      // Partial, case-insensitive email match.
+      ...(q ? { emailAddress: [q] } : {}),
     }));
   } catch (err) {
     console.error('user list failed', err);
     return <p className={ui.empty}>The user list is unavailable right now.</p>;
   }
-  if (data.length === 0) return <p className={ui.empty}>No users on this page.</p>;
+  if (data.length === 0)
+    return (
+      <p className={ui.empty}>
+        {q ? `No users with an email matching “${q}”.` : 'No users on this page.'}
+      </p>
+    );
+  const qs = q ? `&q=${encodeURIComponent(q)}` : '';
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   return (
     <>
-      <p className={ui.count}>{total} users</p>
+      <p className={ui.count}>
+        {total} users{q ? ` matching “${q}”` : ''}
+      </p>
       <div className={styles.wrap}>
         <table className={styles.table}>
           <thead>
@@ -147,6 +186,7 @@ async function UserTable({ page, me }: { page: number; me: string }) {
                     ) : (
                       <Confirm
                         label="Make admin"
+                        subtitle="Hand the bow"
                         warning="This user gets full admin access."
                         action={grantAdminAction}
                         userId={u.id}
@@ -178,11 +218,11 @@ async function UserTable({ page, me }: { page: number; me: string }) {
         </table>
       </div>
       <div className={styles.pager}>
-        {page > 1 && <Link href={`/admin/users?page=${page - 1}`}>Previous</Link>}
+        {page > 1 && <Link href={`/admin/users?page=${page - 1}${qs}`}>Previous</Link>}
         <span>
           Page {page} of {pages}
         </span>
-        {page < pages && <Link href={`/admin/users?page=${page + 1}`}>Next</Link>}
+        {page < pages && <Link href={`/admin/users?page=${page + 1}${qs}`}>Next</Link>}
       </div>
     </>
   );
