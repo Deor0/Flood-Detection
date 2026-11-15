@@ -164,9 +164,7 @@ export default async function HelplinePage() {
           Every command
         </h2>
         <p className={styles.sectionLede}>
-          Commands are not case sensitive, and a small typo is fine (SERCH works). FIND, LOST and
-          SAFE also work, as do KHOJ, HARAYO and BHETIYO. Separate the parts of a report with
-          commas.
+          Commands are not case sensitive. Separate the parts of a report with commas.
         </p>
         <div className={styles.tableWrap}>
           <table className={styles.table}>

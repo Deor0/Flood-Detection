@@ -49,17 +49,16 @@ export const COMMANDS: HelplineCommand[] = [
   {
     sms: 'FOUND <name>',
     voice: null,
-    does: 'Marks a person you reported as found (by name or REG number). Only the phone that reported them can do this.',
+    does: 'Marks a person you reported as found. Only the phone that reported them can do this.',
     example: 'FOUND Maya Rai',
     reply: 'REG-01001 Maya Rai is now marked FOUND. Thank you.',
   },
   {
     sms: 'STATUS <place>',
     voice: null,
-    does: 'Gives the saved, simulated river level for a known place, or says there is no data. Not an official forecast.',
+    does: 'Points you to the river check on the web flood desk.',
     example: 'STATUS Kathmandu',
-    reply:
-      'SIMULATION, not an official forecast. Bagmati, Kathmandu, saved 15 Nov: river NORMAL...',
+    reply: 'SIMULATION ONLY: live river status for Kathmandu is on the web flood desk...',
   },
   {
     sms: 'HELP',

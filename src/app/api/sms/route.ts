@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleInboundSms } from '@/core/sms';
 import { getDb } from '@/db';
-import { allowedSenders, normalizeUsPhone, smsLineOpen } from '@/lib/phone';
+import { normalizeUsPhone } from '@/lib/phone';
 
 const REFUSED = 'This number is not allowed to use the line.';
 
@@ -15,8 +15,8 @@ export async function POST(request: Request) {
 
   const record = payload as { from?: unknown; body?: unknown };
   const from = typeof record.from === 'string' ? normalizeUsPhone(record.from) : null;
-  const allowed = process.env.SMS_ALLOWED_FROM;
-  if (!from || (!smsLineOpen(allowed) && !allowedSenders(allowed).has(from))) {
+  const allowed = normalizeUsPhone(process.env.SMS_ALLOWED_FROM ?? '');
+  if (!from || !allowed || from !== allowed) {
     return NextResponse.json({ reply: REFUSED });
   }
 
