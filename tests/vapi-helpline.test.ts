@@ -1,10 +1,7 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { missingPersonEvents, missingPersons } from '@/db/schema';
-import { handleVapiTools, normalizeCallerPhone, type HelplineReport } from '@/core/helpline/vapi';
+import { handleVapiTools, normalizeCallerPhone } from '@/core/helpline/vapi';
 import { createTestDb } from './db';
 
 const { holder } = vi.hoisted(() => ({ holder: { db: null as unknown } }));
@@ -18,27 +15,24 @@ vi.mock('@/db', () => ({
 
 import { POST } from '@/app/api/sms/vapi/route';
 
+const SECRET = 'test-vapi-secret';
 const US = '+14155552671';
 const NEPAL = '+9779841234567';
 
 let ctx: Awaited<ReturnType<typeof createTestDb>>;
-let reportsDir: string;
 
 beforeAll(async () => {
   ctx = await createTestDb();
   holder.db = ctx.db;
-  reportsDir = mkdtempSync(path.join(tmpdir(), 'helpline-'));
-  process.env.HELPLINE_REPORTS_FILE = path.join(reportsDir, 'reports.json');
 });
 
 afterAll(async () => {
   await ctx.close();
-  rmSync(reportsDir, { recursive: true, force: true });
 });
 
-function savedReports(): HelplineReport[] {
-  return JSON.parse(readFileSync(process.env.HELPLINE_REPORTS_FILE!, 'utf8')) as HelplineReport[];
-}
+beforeEach(() => {
+  process.env.VAPI_WEBHOOK_SECRET = SECRET;
+});
 
 function resultOf(
   results: { toolCallId: string; result: string }[],
@@ -95,29 +89,10 @@ describe('report_missing_person', () => {
       .from(missingPersons)
       .where(eq(missingPersons.name, 'Sarah Jenkins'));
     expect(row.reporterPhone).toBe(NEPAL);
-    expect(row.contact).toBeNull();
+    expect(row.contact).toBe(NEPAL);
     expect(row.notes).toBe('Blue jacket, needs insulin');
     expect(row.lastSeenLocation).toBe('Westside Community Center, Houston');
     expect(row.age).toBe(34);
-    expect(row.status).toBe('missing');
-    expect(row.id).toMatch(/^[0-9a-f-]{36}$/i);
-
-    const record = savedReports().find((item) => item.name === 'Sarah Jenkins');
-    expect(record).toMatchObject({
-      id: row.id,
-      name: 'Sarah Jenkins',
-      status: 'missing',
-      age: 34,
-      lastSeenLocation: 'Westside Community Center, Houston',
-      notes: 'Blue jacket, needs insulin',
-      lat: null,
-      lng: null,
-      contact: null,
-      reporterPhone: NEPAL,
-      foundAt: null,
-    });
-    expect(record?.createdAt).toBe(row.createdAt.toISOString());
-    expect(record?.updatedAt).toBe(row.updatedAt.toISOString());
 
     const events = await ctx.db
       .select()
@@ -147,75 +122,53 @@ describe('report_missing_person', () => {
     expect(resultOf(results, 'report-json').ok).toBe(true);
   });
 
-  it('saves a name by itself and leaves every other caller field null', async () => {
-    const { results } = await handleVapiTools({
-      db: ctx.db,
-      callerPhone: null,
-      toolCalls: [
-        { id: 'name-only', name: 'report_missing_person', arguments: { name: 'Name Only' } },
-      ],
-    });
-    expect(resultOf(results, 'name-only').ok).toBe(true);
-
-    const [row] = await ctx.db
-      .select()
-      .from(missingPersons)
-      .where(eq(missingPersons.name, 'Name Only'));
-    expect(row.age).toBeNull();
-    expect(row.lastSeenLocation).toBeNull();
-    expect(row.lat).toBeNull();
-    expect(row.lng).toBeNull();
-    expect(row.notes).toBeNull();
-    expect(row.contact).toBeNull();
-    expect(row.reporterPhone).toBeNull();
-    expect(row.status).toBe('missing');
-
-    const record = savedReports().find((item) => item.id === row.id);
-    expect(record).toMatchObject({
-      id: row.id,
-      name: 'Name Only',
-      status: 'missing',
-      age: null,
-      lastSeenLocation: null,
-      notes: null,
-      reporterPhone: null,
-      foundAt: null,
-    });
-    expect(record?.createdAt).toBeTruthy();
-    expect(record?.updatedAt).toBeTruthy();
-  });
-
-  it('inserts nothing when the name, age, or tool is unusable', async () => {
+  it('inserts nothing when the location, name, age, tool, or caller is unusable', async () => {
     const before = await counts();
-    const cases: {
-      id: string;
-      name: string;
-      arguments: unknown;
-      phone: string | null;
-      error: string;
-    }[] = [
-      {
-        id: 'no-name',
-        name: 'report_missing_person',
-        arguments: { lastKnownLocation: 'Houston' },
-        phone: US,
-        error: 'invalid',
-      },
-      {
-        id: 'bad-age',
-        name: 'report_missing_person',
-        arguments: { name: 'Ada Lovelace', lastKnownLocation: 'Houston', age: 12.5 },
-        phone: US,
-        error: 'invalid',
-      },
-      {
-        id: 'unknown',
-        name: 'check_flood_status',
-        arguments: { city: 'Austin' },
-        phone: US,
-        error: 'unknown_tool',
-      },
-    ];
+    const cases: { id: string; name: string; arguments: unknown; phone: string | null; error: string }[] =
+      [
+        {
+          id: 'no-place',
+          name: 'report_missing_person',
+          arguments: { name: 'Ada Lovelace' },
+          phone: US,
+          error: 'invalid',
+        },
+        {
+          id: 'blank-place',
+          name: 'report_missing_person',
+          arguments: { name: 'Ada Lovelace', lastKnownLocation: '   ' },
+          phone: US,
+          error: 'invalid',
+        },
+        {
+          id: 'no-name',
+          name: 'report_missing_person',
+          arguments: { lastKnownLocation: 'Houston' },
+          phone: US,
+          error: 'invalid',
+        },
+        {
+          id: 'bad-age',
+          name: 'report_missing_person',
+          arguments: { name: 'Ada Lovelace', lastKnownLocation: 'Houston', age: 12.5 },
+          phone: US,
+          error: 'invalid',
+        },
+        {
+          id: 'unknown',
+          name: 'check_flood_status',
+          arguments: { city: 'Austin' },
+          phone: US,
+          error: 'unknown_tool',
+        },
+        {
+          id: 'no-phone',
+          name: 'report_missing_person',
+          arguments: { name: 'Ada Lovelace', lastKnownLocation: 'Houston' },
+          phone: null,
+          error: 'no_caller_number',
+        },
+      ];
 
     for (const item of cases) {
       const { results } = await handleVapiTools({
@@ -281,9 +234,7 @@ describe('check_missing_person', () => {
     const { results } = await handleVapiTools({
       db: ctx.db,
       callerPhone: null,
-      toolCalls: [
-        { id: 'find-child', name: 'check_missing_person', arguments: { name: 'Sam Rai' } },
-      ],
+      toolCalls: [{ id: 'find-child', name: 'check_missing_person', arguments: { name: 'Sam Rai' } }],
     });
     const body = resultOf(results, 'find-child');
     expect(body.ok).toBe(true);
@@ -329,43 +280,68 @@ describe('check_missing_person', () => {
   });
 });
 
-function post(body: unknown) {
+function post(body: unknown, secret?: string) {
+  const headers = new Headers({ 'content-type': 'application/json' });
+  if (secret !== undefined) headers.set('x-vapi-secret', secret);
   return new Request('http://localhost:3000/api/sms/vapi', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
 }
 
 describe('POST /api/sms/vapi', () => {
+  it('rejects a missing or wrong secret and writes nothing', async () => {
+    const before = await counts();
+    const report = {
+      message: {
+        type: 'tool-calls',
+        toolCallList: [
+          {
+            id: 'blocked',
+            name: 'report_missing_person',
+            arguments: { name: 'Blocked Person', lastKnownLocation: 'Houston' },
+          },
+        ],
+        call: { customer: { number: US } },
+      },
+    };
+    expect((await POST(post(report, 'wrong'))).status).toBe(401);
+    expect((await POST(post(report))).status).toBe(401);
+    expect(await counts()).toEqual(before);
+  });
+
   it('acknowledges a non-tool message and runs a tool call from the Vapi envelope', async () => {
-    const status = await POST(post({ message: { type: 'status-update', status: 'in-progress' } }));
+    const status = await POST(
+      post({ message: { type: 'status-update', status: 'in-progress' } }, SECRET),
+    );
     expect(status.status).toBe(200);
     expect(await status.json()).toEqual({ ok: true });
 
     const before = await counts();
     const response = await POST(
-      post({
-        message: {
-          type: 'tool-calls',
-          toolCalls: [
-            {
-              id: 'from-route',
-              type: 'function',
-              function: {
-                name: 'report_missing_person',
-                arguments: { name: 'Route Person', lastKnownLocation: 'Bhaktapur' },
+      post(
+        {
+          message: {
+            type: 'tool-calls',
+            toolCalls: [
+              {
+                id: 'from-route',
+                type: 'function',
+                function: {
+                  name: 'report_missing_person',
+                  arguments: { name: 'Route Person', lastKnownLocation: 'Bhaktapur' },
+                },
               },
-            },
-          ],
-          call: { customer: { number: '+977 984-1234567' } },
+            ],
+            call: { customer: { number: '+977 984-1234567' } },
+          },
         },
-      }),
+        SECRET,
+      ),
     );
     expect(response.status).toBe(200);
-    const payload = (await response.json()) as {
-      results: { toolCallId: string; result: string }[];
-    };
+    const payload = (await response.json()) as { results: { toolCallId: string; result: string }[] };
     expect(resultOf(payload.results, 'from-route').ok).toBe(true);
     expect(await counts()).toEqual({ people: before.people + 1, events: before.events + 1 });
   });
