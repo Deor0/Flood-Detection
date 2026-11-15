@@ -1,5 +1,29 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (Offline Helpline UI: SMS + voice, frontend only)
+
+The user asked for UI and UX changes only, with no backend changes and no tests. This is approved UI-only work: no test was written or edited, and nothing in `src/app/api`, `src/core`, `src/db`, `src/sms` or `src/proxy.ts` changed.
+
+- `/sms-simulator` is now presented as **Offline Helpline** (the URL is unchanged, so the gate test still covers it). Page metadata and openGraph are set. The page has two channel cards (voice line: number placeholder; text line: live pilot), the simulator with **Text | Call** tabs, a 4-step "how it works without internet", a command reference table and a privacy and limits list.
+- Call tab (`CallSimulator.tsx`): a client-side script for a guided call (check or report → name → place → age). It runs the existing `sendSimulatedSms` action with `SEARCH` / `MISSING`, so the answers come from the real registry. There's an optional Read aloud toggle (browser `speechSynthesis`). Like the Text tab, reports filed here are real records.
+- Shared data is in `src/lib/helpline.ts` (`VOICE_NUMBER = null` until the Vapi number is known, `COMMANDS`, `PRIVACY_POINTS`). The new `HelplineNote` card ("No internet? Call or text") is on Home, `/missing`, `/find` and `/guide`. There's also a "No mobile data?" tip under Guide → During.
+- Home copy fixed: "No real alert or SMS is ever sent" is now accurate (only flood alerts are simulated), and "Sign-up uses an email or a US phone number" now says email only. The nav label is still "SMS Simulator" because the user didn't pick it.
+- Checks: `tsc` clean, lint 0 errors, tests 84/86 (the 2 known test bugs below), `pnpm build` passes. Rendered the helpline page with its real CSS at 1280px and 375px: no horizontal overflow. The call flow's clicks haven't been tried in a signed-in browser (production Clerk keys don't work on localhost).
+- **Backend items found, not done (frontend-only rule):**
+  1. `report_missing_person` (`src/core/helpline/vapi.ts`) appends to `data/helpline-reports.json`. Vercel's file system is read-only, so a live voice report probably saves the DB row and then throws, and the caller hears an error. It needs a test and a fix (skip or guard the file write in production).
+  2. Open `/api/sms` to any US number, with a shared-secret check, so the SMS number can be published.
+  3. The voice line has no "found" tool. The UI tells callers to text `FOUND <name>`.
+  4. Admin: on the **production** Clerk instance, `oshanhamal3@gmail.com` (`user_3M8OZpmZ9rIJPts8b9SyYNZ3LLM`) has no `role`. The admin role exists only on the dev instance. Set `publicMetadata.role = "admin"` in production (waiting on the user).
+
+## 2026-11-15 · Claude (SMS line works end to end in production)
+
+- `POST /api/sms` is live on `main` (`082a4c8`, cherry-picked from `sms-calls` `358d129`) and deployed at https://www.poseidonsurge.surf/api/sms. Takes `{ from, body }` JSON, accepts only `SMS_ALLOWED_FROM`, runs `handleInboundSms`, returns `{ reply }`. `tests/sms-shortcut.test.ts` is green.
+- Bridge: an iPhone Shortcuts automation on the receiver phone (trigger: message from the offline phone's contact → POST to `/api/sms` with `from` typed in and `body` = message content → text `reply` back). Tested by the user from a phone with no internet: works.
+- **Open for Grok:**
+  1. The route trusts the `from` field only; anyone who knows the allowed number can post reports. Please write a red test for a shared-secret header (e.g. `x-sms-secret` checked against an env var). The Shortcut can send that header.
+  2. `SMS_ALLOWED_FROM` holds one number. If more offline phones need the line, write tests for a list.
+  3. `/api/postsms` (`8e5a607`) is on `main` and still has no caller check (see the earlier entry).
+
 ## 2026-11-15 · Claude (fix: /communities hung for signed-in users; real cause of the earlier hangs)
 
 - Signed in, `/communities` stayed on "Loading records" (signed out it worked). Reproduced against Supabase: with `max: 1`, postgres-js pipelines concurrent queries on one connection, and through Supavisor's transaction mode they never answer (3 concurrent queries: hang with max 1, ~0.3 s with max 5). Signed-in `/communities` runs `listPrograms` and `listMyPrograms` in parallel. This, not frozen instances, was also the likely cause of the earlier "everything hangs" after the `max: 1` change.

@@ -1,6 +1,7 @@
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { HelplineNote } from '@/components/HelplineNote';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { getDb } from '@/db';
 import { PUBLIC_SEARCH_MIN_CHARS, publicSearch } from '@/core/missing/publicSearch';
@@ -101,6 +102,8 @@ export default async function FindPage({
       <Suspense key={q} fallback={<ListSkeleton />}>
         <Results q={q} />
       </Suspense>
+
+      <HelplineNote heading="No internet? Search by phone call or text." />
     </main>
   );
 }

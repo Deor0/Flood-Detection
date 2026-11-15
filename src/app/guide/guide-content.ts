@@ -125,6 +125,10 @@ export const PHASES: Phase[] = [
         text: 'Turn off power and water mains only if the authorities tell you to, and only if you can do it dry.',
         source: 'redcross',
       },
+      {
+        text: 'No mobile data? Use the Offline Helpline: call the voice line, or text SEARCH, MISSING or FOUND with a name.',
+        why: 'Calls and texts often still get through when data and Wi-Fi are down. Details are under "Using this app in a flood" below.',
+      },
     ],
   },
   {
@@ -212,7 +216,11 @@ export const APP_LINKS = [
   },
   { href: '/missing', title: 'Missing People', text: 'Report someone, or mark a person found.' },
   { href: '/find', title: 'Find a person', text: 'Search by name. Shows status and area only.' },
-  { href: '/sms-simulator', title: 'SMS simulator', text: 'Try the text-message commands.' },
+  {
+    href: '/sms-simulator',
+    title: 'Offline Helpline',
+    text: 'No internet? Call or text to search, report, or mark someone found.',
+  },
   {
     href: '/communities',
     title: 'Communities',

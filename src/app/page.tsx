@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { HelplineNote } from '@/components/HelplineNote';
 import FeatureMedia, { type ArtSlug } from './home-art/FeatureMedia';
 import HeroBackdrop from './home-art/HeroBackdrop';
 import styles from './landing.module.css';
@@ -6,7 +7,7 @@ import styles from './landing.module.css';
 export const metadata = {
   title: 'Flood Response: a flood desk and a way to find each other',
   description:
-    'Click a river anywhere in the world to see if it is higher than normal, simulate where the water could go, and search a registry of missing people. Educational simulation.',
+    'Click a river anywhere in the world to see if it is higher than normal, simulate where the water could go, and search a registry of missing people, online or by phone call and text with no internet.',
 };
 
 const FEATURES: {
@@ -41,13 +42,13 @@ const FEATURES: {
   },
   {
     slug: 'sms',
-    title: 'SMS simulator',
+    title: 'Offline Helpline',
     lines: [
-      'Try searching and reporting as if you were on a basic phone.',
-      'It is a practice screen: no real message is ever sent.',
+      'No internet? Call our voice agent or text a short command from any phone to search for someone, report them missing, or mark them found.',
+      'Every report lands in the same registry. Practise a text or a call here first.',
     ],
     href: '/sms-simulator',
-    cta: 'Try the simulator',
+    cta: 'See how it works',
     alt: 'A basic phone showing a short text conversation',
   },
   {
@@ -72,7 +73,7 @@ const NEPAL = [
 const SHORTCUTS = [
   { href: '/dashboard', title: 'Flood desk', text: 'Is a river high today?' },
   { href: '/find', title: 'Find each other', text: 'Search the registry' },
-  { href: '/sms-simulator', title: 'SMS simulator', text: 'Practice on a phone' },
+  { href: '/sms-simulator', title: 'Offline Helpline', text: 'Call or text, no internet' },
   { href: '/guide', title: 'Flood guide', text: 'What to do, step by step' },
 ] as const;
 
@@ -161,8 +162,14 @@ export default function Home() {
             ))}
           </ul>
           <p className={styles.fine}>
-            Sign-up uses an email or a US phone number. No real alert or SMS is ever sent.
+            Sign-up uses an email address. Flood alerts are simulated: no real alert is ever sent.
           </p>
+        </div>
+      </section>
+
+      <section className={styles.helpline} aria-label="Offline Helpline">
+        <div className={styles.band}>
+          <HelplineNote heading="No internet? You can still call or text." />
         </div>
       </section>
 
@@ -220,7 +227,8 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <p>
-          Educational simulation, not an official forecast. No real alert or SMS is ever sent.{' '}
+          The flood desk is an educational simulation, not an official forecast, and no real flood
+          alert is ever sent. The Offline Helpline is a live pilot.{' '}
           <Link href="/nepal#sources">Sources and limits</Link>
         </p>
       </footer>

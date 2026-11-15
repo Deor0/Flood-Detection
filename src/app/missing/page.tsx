@@ -1,6 +1,7 @@
 import { Show } from '@clerk/nextjs';
 import { Search } from 'lucide-react';
 import { Suspense } from 'react';
+import { HelplineNote } from '@/components/HelplineNote';
 import { ListSkeleton } from '@/components/ListSkeleton';
 import { SignInLink } from '@/components/SignInLink';
 import styles from '@/components/page-ui.module.css';
@@ -68,6 +69,8 @@ export default async function MissingPage({
       <Suspense key={q} fallback={<ListSkeleton />}>
         <MissingResults q={q} />
       </Suspense>
+
+      <HelplineNote heading="No internet? Report, search or mark found by phone." />
     </main>
   );
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { HelplineNote } from '@/components/HelplineNote';
 import {
   APP_LINKS,
   CARE_NOTES,
@@ -135,9 +136,10 @@ export default function GuidePage() {
             </li>
           ))}
         </ul>
+        <HelplineNote heading="When phones have no data" />
         <p className={styles.note}>
-          This app is an educational simulation. It does not send real alerts, and it does not
-          replace your local authorities.
+          The flood desk is an educational simulation. It does not send real alerts, and nothing
+          here replaces your local authorities or emergency services.
         </p>
       </section>
 

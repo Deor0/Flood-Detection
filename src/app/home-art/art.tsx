@@ -158,7 +158,7 @@ export function SmsArt({ className }: ArtProps) {
       aria-labelledby="art-sms-title art-sms-desc"
       className={className}
     >
-      <title id="art-sms-title">SMS simulator</title>
+      <title id="art-sms-title">Offline Helpline</title>
       <desc id="art-sms-desc">
         A phone with a chat: the question SEARCH Ana and a reply bubble. The screen is labelled
         simulation.

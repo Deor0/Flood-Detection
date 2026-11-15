@@ -1,0 +1,98 @@
+.note {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 2rem;
+  padding: 1.25rem;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-left: 4px solid var(--primary);
+  color: var(--ink);
+}
+
+.head {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.lede {
+  margin: 0;
+  max-width: 44rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.channel {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: var(--surface);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.channel > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.channel span {
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.channel code {
+  color: var(--ink);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.icon {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--primary);
+}
+
+.number {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.link {
+  justify-self: start;
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.link:focus-visible,
+.number:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
