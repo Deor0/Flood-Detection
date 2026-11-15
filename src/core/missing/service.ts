@@ -32,8 +32,11 @@ export async function reportMissing(
   const { value, errors } = cleanMissing(input);
   if (!value) return { ok: false, fields: errors };
 
+  // Testing switch: DISABLE_REPORT_LIMIT=true turns off the 10-reports-per-24h cap. Unset = on.
+  const limitOn = process.env.DISABLE_REPORT_LIMIT !== 'true';
+
   const result = await db.transaction(async (tx) => {
-    if (!actor.isAdmin && (actor.userId || actor.phone)) {
+    if (limitOn && !actor.isAdmin && (actor.userId || actor.phone)) {
       const who = (actor.userId ?? actor.phone) as string;
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${'missing-report:' + who}))`);
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
