@@ -62,3 +62,21 @@ describe('SMS_ALLOWED_FROM', () => {
     expect(r.reply).toBe('This number is not allowed to use the line.');
   });
 });
+
+describe('open SMS line', () => {
+  it('opens only on "*"; empty or a list keeps it restricted', async () => {
+    const { smsLineOpen } = await import('@/lib/phone');
+    expect(smsLineOpen(undefined)).toBe(false);
+    expect(smsLineOpen('')).toBe(false);
+    expect(smsLineOpen('  *  ')).toBe(true);
+    expect(smsLineOpen('+14155552671')).toBe(false);
+  });
+
+  it('answers any valid US number when the line is open, and still refuses invalid ones', async () => {
+    vi.stubEnv('SMS_ALLOWED_FROM', '*');
+    const ok = (await (await post('+13125550142', 'HELP')).json()) as { reply: string };
+    expect(ok.reply).toMatch(/SEARCH/);
+    const bad = (await (await post('not a phone', 'HELP')).json()) as { reply: string };
+    expect(bad.reply).toBe('This number is not allowed to use the line.');
+  });
+});

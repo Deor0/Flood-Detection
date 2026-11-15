@@ -7,6 +7,14 @@ export function normalizeUsPhone(value: string): string | null {
   return parsed.number;
 }
 
+/**
+ * The SMS line is open to every valid US number only when SMS_ALLOWED_FROM is exactly "*".
+ * Empty or unset keeps it closed, so a missing variable never opens the line by accident.
+ */
+export function smsLineOpen(value: string | undefined): boolean {
+  return (value ?? '').trim() === '*';
+}
+
 /** SMS_ALLOWED_FROM: one number or a comma-separated list, each normalized to E.164. */
 export function allowedSenders(value: string | undefined): Set<string> {
   const numbers = (value ?? '')
