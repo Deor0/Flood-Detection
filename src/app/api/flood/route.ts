@@ -8,6 +8,15 @@ import {
 } from '@/core/flood/climatologyCache';
 import { fitGumbel, hydrologicalYearMaxima, returnLevels, returnPeriodRange } from '@/model/gumbel';
 import {
+  combineDaily,
+  fetchForecast,
+  fetchHistory,
+  findReach,
+  chooseReach,
+  GEOGLOWS_ATTRIBUTION,
+  GeoglowsError,
+} from '@/model/geoglows';
+import {
   FloodApiError,
   floodEnsembleUrl,
   floodUrl,
@@ -24,6 +33,8 @@ import { FLOOD_ATTRIBUTION, type FloodResponse, type Severity } from '@/model/ty
 const HISTORY_START = '1984-01-01';
 const FORECAST_DAYS = 16;
 const SERIES_LENGTH = 120;
+/** Recent days needed for a cache hit (the series shows about 104 days of history). */
+const RECENT_DAYS = 125;
 const FLOOD_TIMEOUT_MS = 8000;
 const PLACE_TIMEOUT_MS = 4000;
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -32,15 +43,34 @@ const CACHE_MAX = 200;
 const SNAP_WARN_KM = 3;
 const SMALL_RIVER_M3S = 10;
 const MEDIUM_RIVER_M3S = 100;
+/** Below this mean flow a point is treated as having no river (open sea, desert, lake). */
+const NO_RIVER_M3S = 0.01;
 const MIN_HISTORY_YEARS = 10;
 const RANGE_CAP_YEARS = 1000;
 const PAST_DAYS = SERIES_LENGTH - FORECAST_DAYS;
 const DB_TIMEOUT_MS = 1500;
 const DB_BACKOFF_MS = 60_000;
 const USER_AGENT = 'flood-desk-hackathon/1.0 (educational demo)';
+const GEOGLOWS_CAVEAT =
+  'The river is the GEOGloWS reach with the largest flow among the channels found within about 3 km of your click. Its exact position is not published, so check the river name against the map. The figures are simulated from weather data, not measured at a gauge.';
 
 type Cells = ReturnType<typeof parseFloodResponse>;
 type Cell = Cells[number];
+type Located = { picked: Cell | null; emptyCells: number };
+
+/** Where a result's river data came from, in the shape the response is built from. */
+type Source = {
+  provider: 'geoglows' | 'openmeteo';
+  river: { lat: number; lng: number };
+  days: string[];
+  discharge: (number | null)[];
+  /** Hydrological-year maxima used for the fit (current partial year excluded). */
+  maxima: number[];
+  meanFlow: number;
+  emptyCells: number;
+  ensemble: Promise<EnsembleBand | undefined>;
+  extraCaveats: string[];
+};
 
 /** Small in-memory TTL cache, bounded so a long-running server cannot grow without limit. */
 function makeCache<T>(ttlMs = CACHE_TTL_MS) {
@@ -114,7 +144,7 @@ let cacheDownUntil = 0;
 /**
  * Run a climatology-cache query. The cache is an optimisation only: with no DATABASE_URL, a
  * missing table (migration not applied), a slow or failing database, this returns null and the
- * route carries on with the full history fetch. After a failure it stays off for a minute.
+ * route carries on with a live fetch. After a failure it stays off for a minute.
  */
 async function withCacheDb<T>(fn: (db: CacheDb) => Promise<T>): Promise<T | null> {
   if (!process.env.DATABASE_URL || Date.now() < cacheDownUntil) return null;
@@ -145,6 +175,117 @@ function assertFloodOk(res: Response) {
   if (!res.ok) throw new Error('Flood data service unavailable');
 }
 
+/* ---------------- GEOGloWS (primary) ---------------- */
+
+function shiftDays(ymd: string, delta: number): string {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * The river from GEOGloWS. A cache hit reuses the stored history and downloads only the recent
+ * days and the forecast. A miss downloads the full history once and stores it. Returns
+ * 'noRiver' for points with no flow. Any service failure throws, and the caller falls back.
+ */
+async function fromGeoglows(lat: number, lng: number, today: string): Promise<Source | 'noRiver'> {
+  const key = `g:${cellKey(lat, lng)}`;
+  const stored = await withCacheDb((db) => getFreshClimatology(db, key));
+  if (stored?.noRiver) return 'noRiver';
+
+  if (stored) {
+    // The stored point is the one whose reach was chosen; its reach is looked up again (one call).
+    const id = await findReach(stored.pickedLat ?? lat, stored.pickedLng ?? lng);
+    const forecast = await fetchForecast(id);
+    const recent = await fetchHistory(id, shiftDays(today, -RECENT_DAYS), today);
+    const series = combineDaily(recent, forecast);
+    return {
+      provider: 'geoglows',
+      river: { lat: stored.pickedLat ?? lat, lng: stored.pickedLng ?? lng },
+      days: series.days,
+      discharge: series.discharge,
+      maxima: stored.annualMaxima,
+      meanFlow: stored.meanDischarge ?? 0,
+      emptyCells: 0,
+      ensemble: Promise.resolve(forecast.band),
+      extraCaveats: [GEOGLOWS_CAVEAT],
+    };
+  }
+
+  const chosen = await chooseReach(lat, lng, today);
+  if (chosen.recentMean < NO_RIVER_M3S) {
+    void withCacheDb((db) =>
+      putClimatology(db, {
+        cellKey: key,
+        pickedLat: null,
+        pickedLng: null,
+        noRiver: true,
+        meanDischarge: null,
+        neighbourEmptyCount: 0,
+        annualMaxima: [],
+        years: 0,
+        historyStart: HISTORY_START,
+        historyEnd: today,
+      }),
+    );
+    return 'noRiver';
+  }
+  const forecast = await fetchForecast(chosen.id);
+  const history = await fetchHistory(chosen.id, HISTORY_START, today, 45_000);
+  const series = combineDaily(history, forecast);
+  const pastCount = series.days.filter((d) => d <= today).length;
+  const pastDays = series.days.slice(0, pastCount);
+  const pastValues = series.discharge.slice(0, pastCount);
+  const meanFlow = meanOf(pastValues);
+
+  if (!(meanFlow >= NO_RIVER_M3S)) {
+    void withCacheDb((db) =>
+      putClimatology(db, {
+        cellKey: key,
+        pickedLat: null,
+        pickedLng: null,
+        noRiver: true,
+        meanDischarge: null,
+        neighbourEmptyCount: 0,
+        annualMaxima: [],
+        years: 0,
+        historyStart: HISTORY_START,
+        historyEnd: today,
+      }),
+    );
+    return 'noRiver';
+  }
+
+  const maxima = hydrologicalYearMaxima(pastDays, pastValues);
+  const row: ClimatologyInput = {
+    cellKey: key,
+    pickedLat: chosen.lat,
+    pickedLng: chosen.lng,
+    noRiver: false,
+    meanDischarge: meanFlow,
+    neighbourEmptyCount: 0,
+    annualMaxima: maxima,
+    years: maxima.length,
+    historyStart: HISTORY_START,
+    historyEnd: today,
+  };
+  void withCacheDb((db) => putClimatology(db, row));
+
+  return {
+    provider: 'geoglows',
+    river: { lat: chosen.lat, lng: chosen.lng },
+    days: series.days,
+    discharge: series.discharge,
+    maxima,
+    meanFlow,
+    emptyCells: 0,
+    ensemble: Promise.resolve(forecast.band),
+    extraCaveats: [GEOGLOWS_CAVEAT],
+  };
+}
+
+/* ---------------- Open-Meteo (fallback) ---------------- */
+
 /** One cell, recent days plus forecast: all a cache hit needs (history comes from the database). */
 async function loadCell(lat: number, lng: number): Promise<Cell> {
   const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
@@ -163,12 +304,9 @@ async function loadCell(lat: number, lng: number): Promise<Cell> {
   return cell;
 }
 
-type Located = { picked: Cell | null; emptyCells: number };
-
 /**
  * Find the river, then fetch its full history. A short look at the 9 nearby cells (60 days) picks
- * the river; only that one cell then asks for 1984-to-now. This keeps the call far below
- * Open-Meteo's free limit compared with 9 cells of full history.
+ * the river; only that one cell then asks for 1984-to-now.
  */
 async function loadHistory(lat: number, lng: number, end: string): Promise<Located> {
   // Fetch around the rounded point so the cache key and the cells always agree.
@@ -242,6 +380,98 @@ async function loadEnsemble(lat: number, lng: number): Promise<EnsembleBand | un
   }
 }
 
+/** The Open-Meteo path, used only when GEOGloWS fails. */
+async function fromOpenMeteo(
+  lat: number,
+  lng: number,
+  today: string,
+  end: string,
+): Promise<Source | 'noRiver'> {
+  const key = cellKey(lat, lng);
+  const stored = await withCacheDb((db) => getFreshClimatology(db, key));
+  if (stored?.noRiver) return 'noRiver';
+  const hit =
+    stored && stored.pickedLat !== null && stored.pickedLng !== null
+      ? { ...stored, pickedLat: stored.pickedLat, pickedLng: stored.pickedLng }
+      : null;
+
+  if (hit) {
+    const cell = await loadCell(hit.pickedLat, hit.pickedLng);
+    return {
+      provider: 'openmeteo',
+      river: { lat: cell.lat, lng: cell.lng },
+      days: cell.days,
+      discharge: cell.discharge,
+      maxima: hit.annualMaxima,
+      meanFlow: hit.meanDischarge ?? 0,
+      emptyCells: hit.neighbourEmptyCount,
+      ensemble: loadEnsemble(cell.lat, cell.lng),
+      extraCaveats: [],
+    };
+  }
+
+  const located = await loadHistory(lat, lng, end);
+  const picked = located.picked;
+  if (!picked) {
+    void withCacheDb((db) =>
+      putClimatology(db, {
+        cellKey: key,
+        pickedLat: null,
+        pickedLng: null,
+        noRiver: true,
+        meanDischarge: null,
+        neighbourEmptyCount: 0,
+        annualMaxima: [],
+        years: 0,
+        historyStart: HISTORY_START,
+        historyEnd: today,
+      }),
+    );
+    return 'noRiver';
+  }
+  const pastCount = picked.days.filter((d) => d <= today).length;
+  // Hydrological years (a wet season is never split at 1 January), newest partial year excluded.
+  const maxima = hydrologicalYearMaxima(
+    picked.days.slice(0, pastCount),
+    picked.discharge.slice(0, pastCount),
+  );
+  const meanFlow = meanOf(picked.discharge.slice(0, pastCount));
+  const row: ClimatologyInput = {
+    cellKey: key,
+    pickedLat: picked.lat,
+    pickedLng: picked.lng,
+    noRiver: false,
+    meanDischarge: meanFlow,
+    neighbourEmptyCount: located.emptyCells,
+    annualMaxima: maxima,
+    years: maxima.length,
+    historyStart: HISTORY_START,
+    historyEnd: today,
+  };
+  void withCacheDb((db) => putClimatology(db, row));
+
+  return {
+    provider: 'openmeteo',
+    river: { lat: picked.lat, lng: picked.lng },
+    days: picked.days,
+    discharge: picked.discharge,
+    maxima,
+    meanFlow,
+    emptyCells: located.emptyCells,
+    ensemble: loadEnsemble(picked.lat, picked.lng),
+    extraCaveats: [],
+  };
+}
+
+/* ---------------- Shared response ---------------- */
+
+const RANK: Record<Severity, number> = { unknown: -1, normal: 0, watch: 1, warning: 2, severe: 3 };
+
+/** The worse of two severities; unknown only when both are unknown. */
+function worse(a: Severity, b: Severity): Severity {
+  return RANK[a] >= RANK[b] ? a : b;
+}
+
 function meanOf(values: (number | null)[]): number {
   let sum = 0;
   let count = 0;
@@ -252,13 +482,6 @@ function meanOf(values: (number | null)[]): number {
     }
   }
   return count === 0 ? 0 : sum / count;
-}
-
-const RANK: Record<Severity, number> = { unknown: -1, normal: 0, watch: 1, warning: 2, severe: 3 };
-
-/** The worse of two severities; unknown only when both are unknown. */
-function worse(a: Severity, b: Severity): Severity {
-  return RANK[a] >= RANK[b] ? a : b;
 }
 
 function daysBetween(from: string, to: string): number {
@@ -296,109 +519,17 @@ function noRiverBody(lat: number, lng: number): FloodResponse {
   };
 }
 
-export async function GET(request: Request) {
-  const { userId } = await auth();
-  if (!userId) return json({ error: 'Sign in required' }, 401);
-
-  const params = new URL(request.url).searchParams;
-  const lat = parseCoordinate(params.get('lat'), 90);
-  const lng = parseCoordinate(params.get('lng'), 180);
-  if (lat === null || lng === null)
-    return json({ error: 'lat and lng must be valid coordinates' }, 400);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const end = new Date(Date.now() + FORECAST_DAYS * 86_400_000).toISOString().slice(0, 10);
-  const key = cellKey(lat, lng);
-  const stored = await withCacheDb((db) => getFreshClimatology(db, key));
-  if (stored?.noRiver) return json(noRiverBody(lat, lng), 200, 'private, max-age=300');
-  const hit =
-    stored && stored.pickedLat !== null && stored.pickedLng !== null
-      ? { ...stored, pickedLat: stored.pickedLat, pickedLng: stored.pickedLng }
-      : null;
-
-  // Flood data first (so it is the first fetch started), place name in parallel. On a cache hit
-  // only the chosen cell is fetched; the 1984-to-now history comes from the database.
-  const dataPromise: Promise<Cell | Located> = hit
-    ? loadCell(hit.pickedLat, hit.pickedLng)
-    : loadHistory(lat, lng, end);
-  const placePromise = lookupPlace(lat, lng);
-
-  let data: Cell | Located;
-  try {
-    data = await dataPromise;
-  } catch (err) {
-    const timedOut =
-      err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError');
-    const reason =
-      err instanceof FloodApiError
-        ? err.message
-        : timedOut
-          ? 'Flood data service timed out'
-          : 'Flood data service unavailable';
-    return json({ error: reason }, 502);
-  }
-
-  let river: { lat: number; lng: number };
-  let days: string[];
-  let discharge: (number | null)[];
-  let maxima: number[];
-  let meanFlow: number;
-  let emptyCells: number;
-  // History only (the forecast must not shape the climatology).
-  let pastCount: number;
-
-  if (hit) {
-    const cell = data as Cell;
-    river = { lat: cell.lat, lng: cell.lng };
-    ({ days, discharge } = cell);
-    pastCount = days.filter((d) => d <= today).length;
-    maxima = hit.annualMaxima;
-    meanFlow = hit.meanDischarge ?? 0;
-    emptyCells = hit.neighbourEmptyCount;
-  } else {
-    const located = data as Located;
-    const picked = located.picked;
-    if (!picked) {
-      void withCacheDb((db) =>
-        putClimatology(db, {
-          cellKey: key,
-          pickedLat: null,
-          pickedLng: null,
-          noRiver: true,
-          meanDischarge: null,
-          neighbourEmptyCount: 0,
-          annualMaxima: [],
-          years: 0,
-          historyStart: HISTORY_START,
-          historyEnd: today,
-        }),
-      );
-      return json(noRiverBody(lat, lng), 200, 'private, max-age=300');
-    }
-    river = { lat: picked.lat, lng: picked.lng };
-    ({ days, discharge } = picked);
-    pastCount = days.filter((d) => d <= today).length;
-    // Hydrological years (a wet season is never split at 1 January), newest partial year excluded.
-    maxima = hydrologicalYearMaxima(days.slice(0, pastCount), discharge.slice(0, pastCount));
-    meanFlow = meanOf(discharge.slice(0, pastCount));
-    emptyCells = located.emptyCells;
-    const row: ClimatologyInput = {
-      cellKey: key,
-      pickedLat: river.lat,
-      pickedLng: river.lng,
-      noRiver: false,
-      meanDischarge: meanFlow,
-      neighbourEmptyCount: emptyCells,
-      annualMaxima: maxima,
-      years: maxima.length,
-      historyStart: HISTORY_START,
-      historyEnd: today,
-    };
-    void withCacheDb((db) => putClimatology(db, row));
-  }
-
+async function respond(
+  lat: number,
+  lng: number,
+  today: string,
+  src: Source,
+  place: Promise<string | undefined>,
+): Promise<Response> {
+  const { days, discharge, maxima, meanFlow, emptyCells } = src;
   const tailDays = days.slice(-SERIES_LENGTH);
   const tailValues = discharge.slice(-SERIES_LENGTH);
+  const pastCount = days.filter((d) => d <= today).length;
 
   let current: number | null = null;
   let dischargeDate: string | null = null;
@@ -431,8 +562,7 @@ export async function GET(request: Request) {
   const forecastClass = peakDischarge === null ? null : classifyDischarge(peakDischarge, maxima);
   const todaySeverity: Severity = classified?.severity ?? 'unknown';
   const forecastSeverity: Severity = forecastClass?.severity ?? 'unknown';
-  const ensemblePromise = loadEnsemble(river.lat, river.lng);
-  const [place, ensemble] = await Promise.all([placePromise, ensemblePromise]);
+  const [placeName, ensemble] = await Promise.all([place, src.ensemble]);
 
   const fit = fitGumbel(maxima);
   const driving = Math.max(current ?? 0, peakDischarge ?? 0);
@@ -445,8 +575,8 @@ export async function GET(request: Request) {
     : undefined;
 
   const snapDistanceKm =
-    Math.round(haversineKm({ lat, lng }, { lat: river.lat, lng: river.lng }) * 10) / 10;
-  const caveats: string[] = [];
+    Math.round(haversineKm({ lat, lng }, { lat: src.river.lat, lng: src.river.lng }) * 10) / 10;
+  const caveats: string[] = [...src.extraCaveats];
   if (snapDistanceKm > SNAP_WARN_KM)
     caveats.push(
       `The river data comes from a point ${snapDistanceKm} km from your click. Check that it is the river you meant.`,
@@ -467,7 +597,7 @@ export async function GET(request: Request) {
     caveats.push('There is not enough river history to rate how unusual this flow is.');
 
   const body: FloodResponse = {
-    snapped: { lat: river.lat, lng: river.lng },
+    snapped: { lat: src.river.lat, lng: src.river.lng },
     snapDistanceKm,
     noRiver: false,
     series: { days: tailDays, discharge: tailValues },
@@ -497,8 +627,48 @@ export async function GET(request: Request) {
       ...(ensemble ? { ensemble } : {}),
     },
     caveats,
-    ...(place ? { place } : {}),
-    attribution: FLOOD_ATTRIBUTION,
+    ...(placeName ? { place: placeName } : {}),
+    attribution: src.provider === 'geoglows' ? GEOGLOWS_ATTRIBUTION : FLOOD_ATTRIBUTION,
   };
   return json(body, 200, 'private, max-age=300');
+}
+
+export async function GET(request: Request) {
+  const { userId } = await auth();
+  if (!userId) return json({ error: 'Sign in required' }, 401);
+
+  const params = new URL(request.url).searchParams;
+  const lat = parseCoordinate(params.get('lat'), 90);
+  const lng = parseCoordinate(params.get('lng'), 180);
+  if (lat === null || lng === null)
+    return json({ error: 'lat and lng must be valid coordinates' }, 400);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const end = new Date(Date.now() + FORECAST_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const place = lookupPlace(lat, lng);
+
+  let src: Source | 'noRiver';
+  try {
+    src = await fromGeoglows(lat, lng, today);
+  } catch (err) {
+    // GEOGloWS is the primary source; any failure falls back to Open-Meteo.
+    console.warn('GEOGloWS failed; using Open-Meteo:', err instanceof Error ? err.message : err);
+    try {
+      src = await fromOpenMeteo(lat, lng, today, end);
+    } catch (fallbackErr) {
+      const timedOut =
+        fallbackErr instanceof Error &&
+        (fallbackErr.name === 'TimeoutError' || fallbackErr.name === 'AbortError');
+      const reason =
+        fallbackErr instanceof FloodApiError
+          ? fallbackErr.message
+          : timedOut
+            ? 'Flood data service timed out'
+            : 'Flood data service unavailable';
+      return json({ error: reason }, 502);
+    }
+  }
+
+  if (src === 'noRiver') return json(noRiverBody(lat, lng), 200, 'private, max-age=300');
+  return respond(lat, lng, today, src, place);
 }

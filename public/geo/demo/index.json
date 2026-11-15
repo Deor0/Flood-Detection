@@ -1,0 +1,56 @@
+{
+  "asOf": "2026-11-15T03:38:12.218Z",
+  "zoom": 12,
+  "presets": [
+    {
+      "slug": "bagmati-kathmandu",
+      "name": "Bagmati, Kathmandu",
+      "lat": 27.7,
+      "lng": 85.32,
+      "note": "Nepal. Mountain river through a dense valley city.",
+      "tiles": 4,
+      "zoom": 12,
+      "savedAt": "2026-11-15T03:38:12.218Z"
+    },
+    {
+      "slug": "trishuli-rasuwa",
+      "name": "Trishuli, Rasuwa",
+      "lat": 28.17,
+      "lng": 85.33,
+      "note": "Nepal. Steep Himalayan valley, near the 26 Aug 2026 event.",
+      "tiles": 4,
+      "zoom": 12,
+      "savedAt": "2026-11-15T03:38:44.958Z"
+    },
+    {
+      "slug": "mississippi-st-louis",
+      "name": "Mississippi, St Louis",
+      "lat": 38.63,
+      "lng": -90.18,
+      "note": "USA. A very large, slow river with a wide floodplain.",
+      "tiles": 4,
+      "zoom": 12,
+      "savedAt": "2026-11-15T03:39:18.353Z"
+    },
+    {
+      "slug": "rhine-cologne",
+      "name": "Rhine, Cologne",
+      "lat": 50.94,
+      "lng": 6.96,
+      "note": "Germany. Large river through a city.",
+      "tiles": 9,
+      "zoom": 12,
+      "savedAt": "2026-11-15T03:39:53.750Z"
+    },
+    {
+      "slug": "indus-sukkur",
+      "name": "Indus, Sukkur",
+      "lat": 27.7,
+      "lng": 68.86,
+      "note": "Pakistan. Huge, flat floodplain, hit by the 2022 floods.",
+      "tiles": 6,
+      "zoom": 12,
+      "savedAt": "2026-11-15T03:40:29.348Z"
+    }
+  ]
+}

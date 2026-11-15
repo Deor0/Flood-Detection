@@ -172,7 +172,8 @@ async function fetchTile(z, x, y) {
 }
 
 async function main() {
-  const tmp = await mkdtemp(path.join(os.tmpdir(), 'flood-demo-build-'));
+  // Inside the project so the transpiled code can resolve the project's packages (drizzle-orm etc.).
+  const tmp = await mkdtemp(path.join(ROOT, '.demo-build-'));
   try {
     const routeFile = await transpileTree(path.join(SRC, 'app/api/flood/route.ts'), tmp);
     const terrariumFile = await transpileTree(path.join(SRC, 'model/terrarium.ts'), tmp);

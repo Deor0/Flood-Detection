@@ -307,7 +307,12 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                       : 'Click the map to check the nearest river.'}
                   </p>
                 )}
-                {status === 'loading' && <p className={styles.muted}>Reading river data…</p>}
+                {status === 'loading' && (
+                  <p className={styles.muted}>
+                    Reading river data… The first look at a river can take up to a minute while its
+                    history downloads. Later clicks on the same river are faster.
+                  </p>
+                )}
                 {status === 'error' && <p className={styles.error}>{error}</p>}
                 {data?.noRiver && (
                   <p>

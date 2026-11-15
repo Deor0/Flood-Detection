@@ -8,8 +8,9 @@ export function Disclaimers() {
       <ol>
         <li>This is an educational simulation, not an official forecast or warning.</li>
         <li>
-          Severity is GloFAS river discharge compared with that river cell&apos;s own 1984-present
-          history.
+          Severity compares simulated river flow (GEOGloWS, or Copernicus GloFAS as a fallback) with
+          the same river&apos;s own 1984-present history. These are model values, not gauge
+          readings.
         </li>
         <li>
           Water depth comes from an assumed channel roughness (adjustable in the scenario panel) and

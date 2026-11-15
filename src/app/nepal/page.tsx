@@ -35,7 +35,7 @@ const WHY = [
 
 const LIMITS = [
   'Educational simulation, not an official forecast or warning.',
-  'Severity compares GloFAS modelled discharge with its own 1984-present history.',
+  'Severity compares simulated river flow (GEOGloWS, or Copernicus GloFAS as a fallback) with its own 1984-present history.',
   'Depth uses an assumed bankfull depth, which you can adjust.',
   'Elevation is about 30 m resolution with errors of several metres.',
   'Landslides, debris flows and glacial-lake floods are not represented.',
@@ -153,8 +153,9 @@ export default function NepalPage() {
           ))}
         </ul>
         <p className={styles.attr}>
-          Data: Open-Meteo.com / Copernicus GloFAS, AWS Terrarium tiles, Nominatim (OpenStreetMap
-          contributors), Copernicus EMS EMSR927, GDACS.
+          Data: GEOGloWS ECMWF Streamflow (CC BY 4.0), Open-Meteo.com / Copernicus GloFAS
+          (fallback), AWS Terrarium tiles, Nominatim (OpenStreetMap contributors), Copernicus EMS
+          EMSR927, GDACS.
         </p>
       </details>
 

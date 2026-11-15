@@ -6,8 +6,10 @@ A flood desk for anywhere in the world, plus the tools a community needs after a
 
 ## What exists today
 
-- **Flood desk (`/dashboard`).** Click anywhere on a world map and the server fetches real river discharge for that point. Severity (`normal`, `watch`, `warning`, `severe`) compares the current GloFAS discharge with that river cell's own 1984-to-present history (Gumbel fit; boundaries at 2, 5 and 20 years; display capped at 40 years). Fewer than 10 yearly maxima gives `unknown`, never a made-up number.
-- **Water-fill simulation.** The rise above bankfull is applied to real terrain with a HAND model (height above nearest drainage), so hollows behind ridges stay dry. Bankfull depth is an adjustable assumption.
+- **Flood desk (`/dashboard`).** Click anywhere on a world map and the server fetches simulated river flow for that point from **GEOGloWS ECMWF Streamflow** (primary) or **Open-Meteo / Copernicus GloFAS** (fallback when GEOGloWS fails). Severity (`normal`, `watch`, `warning`, `severe`) compares the flow with that river's own 1984-to-present history (hydrological-year maxima, L-moment Gumbel fit; boundaries at 2, 5 and 20 years; display capped at 40 years). Fewer than 10 yearly maxima gives `unknown`, never a made-up number. The first click on a new river can take 20 to 60 seconds; after that its history is cached.
+- **Water-fill simulation.** Depth comes from a Manning rating curve built on real terrain with a HAND model (height above nearest drainage), so hollows behind ridges stay dry. Channel roughness is adjustable, and depths are shown as a likely range.
+- **Experiments.** Pick a forecast day, a 2 to 100-year flood, a flow multiplier, or a breach what-if (peak envelope, no wave travel time), save one scenario and compare it with another using a swipe divider.
+- **Public demo (`/demo`).** Five preset rivers from saved data, no sign-in needed. Rebuild the saved data with `node scripts/build-demo.mjs` (add `--force` to refresh presets already saved).
 - **Nepal replay.** A documented timeline, sources and impact figures for the 26 Aug 2026 Rasuwa event (Bhote Koshi / Trishuli), including the Copernicus EMS EMSR927 figures. It is **not** an animated river rise: that event was a slope and ice failure that river and rain data do not show, and the screen says so.
 - **Simulated alert pipeline.** The exact SMS and voice script appear in an on-screen phone preview, labelled `SIMULATION ONLY`. Admins move an alert through `detected → verified → notified → acknowledged`; steps are logged in an append-only table.
 - **Missing People (`/missing`).** Report, search (any word order, accent-insensitive), mark found, suggest edits. Contact details are visible only to admins and the reporter.
@@ -18,10 +20,10 @@ A flood desk for anywhere in the world, plus the tools a community needs after a
 ## What is simulated or not built
 
 - **No real alert, SMS or call is ever sent.** Alerts are on-screen only, and the code refuses to mark a real alert as notified.
-- **`POST /api/sms` returns 501.** `src/sms/twilio.ts` and `src/sms/textbelt.ts` are empty stubs and the SMS command handler (`handleInboundSms`) does not exist yet. The planned commands (`MISSING`, `FOUND`, `SEARCH`, `STATUS`, `HELP`) are not implemented.
+- **No real SMS is sent or received.** `POST /api/sms` returns 501 and `src/sms/twilio.ts` / `src/sms/textbelt.ts` are empty stubs. The command core (`handleInboundSms`: `HELP`, `SEARCH`, `MISSING`, `FOUND`, `STATUS`) exists and is reachable only through the on-screen `/sms-simulator`.
 - **Phone numbers are US only (+1)** for now. The schema stores E.164 and is not US-specific.
 - The Nepal replay has no discharge series. Nearby hospitals and shelters, a worldwide GDACS layer and a full hydrodynamic model are not built.
-- The alert migration (`src/db/migrations/0002_*`) must be applied before the alert buttons work against a real database.
+- Two migrations are not applied to the real database yet: `0002_*` (flood alert tables; the admin alert buttons need it) and `0003_*` (the `flood_climatology` cache; without it the flood desk uses an in-memory cache only).
 
 ## How it works
 
@@ -30,14 +32,17 @@ map click (lat, lng)
    │
    ▼
 GET /api/flood  (signed in only)
-   ├─ Open-Meteo Flood API: 9 neighbouring 0.05° cells, history from 1984 + forecast
-   ├─ pick the river cell (largest mean discharge; none → "no river")
-   ├─ yearly maxima → L-moment Gumbel fit → return period → severity
+   ├─ database cache (flood_climatology): stored yearly maxima for this spot? → skip the history download
+   ├─ GEOGloWS (primary): look up the reaches at 9 points within ~3 km, keep the one with the
+   │    largest recent flow, download its daily history from 1984 once, plus 15-day forecast statistics
+   ├─ Open-Meteo / GloFAS (fallback if GEOGloWS fails): 9 cells for 60 days to pick the river,
+   │    then that one cell's history from 1984 + forecast
+   ├─ hydrological-year maxima → L-moment Gumbel fit → return period → severity
    └─ Nominatim: place name
    │
    ▼
-browser: rise above bankfull → AWS Terrarium tiles via GET /api/dem
-         → HAND (priority-flood, flow accumulation) → depth overlay on the map
+browser: AWS Terrarium tiles via GET /api/dem → HAND (priority-flood, flow accumulation, in a
+         Web Worker) → Manning rating curve for the chosen flow → depth overlay on the map
    │
    ▼
 admin: alert preview (SIMULATION) → verify → notify → acknowledge (logged)
@@ -47,7 +52,9 @@ The model code lives in `src/model/` (pure functions, tested without network). T
 
 ## Data sources and attribution
 
-- Flood data: Open-Meteo.com / Copernicus GloFAS (river discharge, 0.05° cells, history from 1984)
+- River flow (primary): GEOGloWS ECMWF Streamflow v2, CC BY 4.0, keyless (reach-based model driven by ERA5 and ECMWF ENS; daily history from 1940, of which we use 1984 onward; 15-day forecast statistics)
+- River flow (fallback): Open-Meteo.com / Copernicus GloFAS (river discharge, 0.05° cells, history from 1984)
+- Cache: yearly maxima per spot are stored in the `flood_climatology` table (migration `0003`) so each river's history is downloaded once. Without that migration the route still works, using an in-memory cache only.
 - Elevation: AWS Terrain Tiles (Terrarium encoding)
 - Place names: Nominatim (OpenStreetMap)
 - Nepal replay: Copernicus Emergency Management Service EMSR927 and the other sources listed, with licenses, in `public/geo/nepal-2026/replay.json`
@@ -55,8 +62,11 @@ The model code lives in `src/model/` (pure functions, tested without network). T
 ## Limits and disclaimers
 
 - An educational simulation, not an official forecast.
-- Severity is GloFAS discharge compared with its own 1984-to-present history; GloFAS is a model, not a gauge reading.
-- Depth uses an assumed bankfull depth (adjustable).
+- Severity compares simulated river flow (GEOGloWS, or GloFAS as a fallback) with its own 1984-to-present history. Both are models, not gauge readings.
+- GEOGloWS returns the nearest river reach without its position, and the nearest reach can be a small side channel. The app therefore checks the reaches within about 3 km and uses the largest; check the river name against the map.
+- The hosted GEOGloWS return-period endpoint returned server errors when tested, so return periods come from our own Gumbel fit of the history.
+- GEOGloWS and Open-Meteo both rate-limit bursts of requests. The app spaces and retries its GEOGloWS calls and caches results; heavy clicking can still hit a limit for a while.
+- Depth uses an assumed channel roughness and a slope read from the terrain (bankfull is estimated, not surveyed), so it is a likely range.
 - Elevation is about 30 m resolution with errors of several metres.
 - Landslides, debris flows and glacial-lake floods are not represented.
 - Building and population counts are estimates.
