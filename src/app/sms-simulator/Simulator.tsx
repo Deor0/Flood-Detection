@@ -80,8 +80,8 @@ export function Simulator() {
           </p>
         ) : (
           <p className={styles.note}>
-            The call version walks you through the same questions the voice agent asks. Type what
-            you would say. Turn on <strong>Read aloud</strong> to hear the agent.
+            The call version walks you through the same questions Mentor, the voice agent, asks.
+            Type what you would say. Turn on <strong>Read aloud</strong> to hear Mentor.
           </p>
         )}
         <p className={styles.warning}>

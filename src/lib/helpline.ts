@@ -5,6 +5,10 @@
  */
 
 export const HELPLINE_NAME = 'Offline Helpline';
+/** Odyssey theme: the kicker shown above the plain name. */
+export const HELPLINE_KICKER = 'The Beacon Line';
+/** The voice agent's name (Odyssey: Mentor, Telemachus's guide). */
+export const VOICE_AGENT_NAME = 'Mentor';
 export const HELPLINE_PATH = '/sms-simulator';
 
 /** The Vapi voice line, as it should be dialled. null shows "Number coming soon". */
@@ -45,16 +49,17 @@ export const COMMANDS: HelplineCommand[] = [
   {
     sms: 'FOUND <name>',
     voice: null,
-    does: 'Marks a person you reported as found. Only the phone that reported them can do this.',
+    does: 'Marks a person you reported as found (by name or REG number). Only the phone that reported them can do this.',
     example: 'FOUND Maya Rai',
     reply: 'REG-01001 Maya Rai is now marked FOUND. Thank you.',
   },
   {
     sms: 'STATUS <place>',
     voice: null,
-    does: 'Points you to the river check on the web flood desk.',
+    does: 'Gives the saved, simulated river level for a known place, or says there is no data. Not an official forecast.',
     example: 'STATUS Kathmandu',
-    reply: 'SIMULATION ONLY: live river status for Kathmandu is on the web flood desk...',
+    reply:
+      'SIMULATION, not an official forecast. Bagmati, Kathmandu, saved 15 Nov: river NORMAL...',
   },
   {
     sms: 'HELP',

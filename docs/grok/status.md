@@ -10,6 +10,17 @@ Approved one-time test exception: new tests in `tests/missing-judge.test.ts`; `t
 - New `/missing/[publicId]`: record page with a public-safe timeline (`src/core/missing/timeline.ts`, no actor ids/notes/reasons). Status filter chips on `/missing`. Form ids use the record id. Odyssey copy (kicker, badges, Telemachus line).
 - Checks: tsc clean, lint 0 errors, tests 100/101 (only `api-flood`, another slice), build ok.
 
+## 2026-11-15 · Claude (judge feedback: Offline Helpline robustness, theme, creativity; branch `judge/helpline`)
+
+One-time test exception (user): Claude wrote new tests for the backend it changed; `tests/clerk-gate.test.ts` changed only to move `/sms-simulator` to the public list.
+
+- Voice (`src/core/helpline/vapi.ts`, `/api/postsms`): the `data/helpline-reports.json` copy is best effort (skipped when `VERCEL` is set, errors logged), so a saved report always returns its number and Vapi does not retry into duplicates. Repeat guard: same caller number (or same `call.id` when hidden) + same normalized name within 10 min returns the earlier record with `duplicate: true`, under an advisory lock. Each voice report also appends a `VOICE_REPORT` row to `sms_log` (no schema change). A throwing tool returns `server_error` for that call only.
+- SMS core (`src/core/sms`): forgiving parser (`parse.ts`: punctuation after the command, aliases FIND/LOST/SAFE/KHOJ/HARAYO/BHETIYO and more, one-letter typos, `FOUND REG-01001`, unreadable age dropped). SEARCH lines use `coarseRegion`. A repeated MISSING/FOUND text from the same phone within 2 min returns the first reply (logged `DUPLICATE`); one phone's texts run one at a time (advisory lock, command in a savepoint). Reunion notice: "Good news: REG-01001 Maya Rai is home safe." prepended when a report the phone filed was marked found by someone else since its last text. STATUS answers from the saved demo river data (`status.ts`, bundled JSON), labelled SIMULATION with the save date, else "No river data for X" + higher ground.
+- `SMS_ALLOWED_FROM` accepts a comma-separated list (`allowedSenders` in `src/lib/phone.ts`).
+- `/sms-simulator` is public; signed-out visitors see a "Sign in to practise" link instead of the simulator. CallSimulator: "No, I want to report my mother" now files a report (end only on bare "no"/"bye"/"that's all"). Theme: kicker "The Beacon Line", voice agent "Mentor".
+- Tests: `tests/sms-parse.test.ts`, `sms-core.test.ts`, `sms-allowed.test.ts`, `vapi-tools.test.ts`, `call-intent.test.ts`. Full run 188/190 (the two known reds: `admin-edits`, `api-flood`). tsc clean, lint 0 errors, build ok.
+- **Open:** the Nav still hides the helpline tab from signed-out visitors (Nav is outside this area).
+
 ## 2026-11-15 · Claude (Offline Helpline UI: SMS + voice, frontend only)
 
 The user asked for UI and UX changes only, with no backend changes and no tests. This is approved UI-only work: no test was written or edited, and nothing in `src/app/api`, `src/core`, `src/db`, `src/sms` or `src/proxy.ts` changed.
