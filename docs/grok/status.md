@@ -1,5 +1,40 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-14 · Claude (demo fixes slices 1-3 + README; judge review done)
+
+- A judge-style review (three read-only agents) produced a ranked critique; plan approved by the user. Brief for Grok: `docs/grok/brief-demo-fixes.md`. User decisions: under 6 h left; SMS shown through an on-screen simulator; public missing search is status-only; phones stay US-only.
+- Built with no test edits: **(1) forecast-first** `/api/flood` (peak only from days after today UTC, `current.dischargeDate`, new `forecast{...}`, headline severity = worse of today and forecast peak); **(3)** in-memory history/place cache (6 h), 8 s/4 s timeouts, Nominatim User-Agent; alert panel hidden for `normal`; **(2)** map flies to zoom 12 after a river click, "Try Rasuwa" button, HAND in a Web Worker with main-thread fallback (`hand.worker.ts`, `water-core.ts`), debounced slider, distinct shallow-water colour, stream threshold scaled by latitude, replay panel fixes (empty series, date-only events), bigger chart text; README rewritten. Suite 83/84, lint clean, build ok. **Not seen in a browser.**
+- **Grok, tests needed (red first):** slice 1 (future-only peak, headline severity, `daysAhead`), slice 3 (one Open-Meteo fetch for repeated points, timeout gives 502), slice 4 (SMS core + simulator), slice 5 (public `/` and `/find` status-only; needs the user's OK to change `src/proxy.ts` and `tests/clerk-gate.test.ts`), slice 6 (mark-found confirm, admin-edits reporter-cap test fix). Held back until those tests exist.
+- The alert preview now uses the forecast return period when it is the worse one. Migration `0002` still unapplied; nothing committed.
+
+## 2026-11-14 · Claude (dashboard flood desk IMPLEMENTED; branch `dashboard`)
+
+- Three parallel agents, no tests edited. `pnpm test`: 83 of 84 pass. `pnpm lint` clean, `pnpm build` ok (new routes `/api/flood`, `/api/dem`). **Not run in a browser or against real Open-Meteo / DEM tiles.** Nothing was sent anywhere.
+- Model: `src/model/{gumbel,severity,rise,terrarium,hand,openMeteo,replay,types}.ts`; routes `src/app/api/{flood,dem}/route.ts`. Alerts: `src/core/alerts/{state,service}.ts`, `canSendAlert`, tables `flood_alerts`/`flood_alert_events`, migration `0002_bored_maestro.sql` (**generated, NOT applied; waiting for the user**). UI: `src/app/dashboard/*` (shell + Suspense, client-only map, HAND water layer, Live/Replay, phone preview, admin-only actions that call `requireAdmin()` first).
+- **Grok, please review:** (1) `computeHand` deviates from the brief to satisfy `model-hand` tests: outlets are edge cells with no strictly lower neighbour; a stream is a cell with MORE than `streamThresholdCells` cells upstream (brief said `>=`); drainage target is the first downstream stream whose ground is not higher than the cell. (2) `replay.json` has an empty `series` (no invented numbers); add sourced series if you have them. (3) `tests/admin-edits.test.ts` "stops one user at 10 pending suggestions" fails on `reportMissing` (line 63), a leftover from the admin slice, unrelated to the dashboard; the test's reporter probably hits the 10 reports/24h cap.
+
+## 2026-11-14 · Grok
+
+- Wrote the failing dashboard tests first. No model, route, alert, or map code was added.
+- Red on purpose: `tests/model-gumbel.test.ts`, `tests/model-severity.test.ts`, `tests/model-rise.test.ts`, `tests/model-terrarium.test.ts`, `tests/model-hand.test.ts`, `tests/model-flood.test.ts`, `tests/api-flood.test.ts`, `tests/alerts.test.ts`, `tests/alerts-schema.test.ts`, `tests/replay.test.ts`, `tests/dashboard-page.test.ts`.
+- Contract: `docs/grok/plan.md` and `docs/grok/brief-dashboard.md`. Do not edit the tests. Do not send a real alert. Do not change `src/proxy.ts`.
+- **Claude next:** implement until those files pass, then `pnpm lint` and `pnpm build`.
+
+## 2026-11-14 · Claude (dashboard: plan approved, brief written)
+
+- Committed the Fog/teal palette, Roboto and sharp-edge restyle on branch `dashboard` (`014a78a`). Grok's test updates (`tests/edge-review.test.ts`, `tests/programs.test.ts`, `tests/admin-guard.test.ts`, `tests/admin-permissions.test.ts`) are still uncommitted and were left alone.
+- Five research agents compared data sources, GitHub models, our codebase, Nepal data and alert channels. Findings that shaped the plan: no maintained drop-in flood model fits (RiskRadar has no license; ANUGA is 10-16 h and risky, so skipped); a plain bathtub fill is wrong, so use HAND (height above nearest drainage); severity = today's GloFAS discharge against its own 1984-present history (Gumbel, 2/5/20 years); the 26 Aug 2026 Nepal event was a slope/ice failure that rain and river data cannot show, so the replay is a documented timeline plus the EMSR927 footprint, not an animated rise.
+- User decisions: worldwide by click; replay only the 26 Aug 2026 event; must-haves are live severity, Nepal replay slider, water-fill animation and the alert pipeline with a phone preview; alerts are simulation-only (user declined to choose real channels); Grok writes tests first.
+- Wrote `docs/grok/brief-dashboard.md` (formulas, boundaries, fixtures, route contracts, alert state machine, replay-data guard, UI contract). **No dashboard code written yet.**
+- **Grok next:** turn the brief into behaviors in `plan.md` and write the failing tests. **Claude next:** implement after they are red (three parallel agents: model maths and routes; map, water layer and worker; replay data script, panels, alert pipeline and its migration), then ask the user before applying the migration or fetching the Copernicus products zip.
+
+## 2026-11-14 · Grok
+
+- Finished the admin tests Claude asked for. Updated the 6 older tests that still expected a normal user's program to be public immediately, and that expected an outsider to edit a missing record.
+- Added `tests/admin-permissions.test.ts` (roles, contact redaction, suggested edits, approve/reject, re-open, report cap, pending programs, pending-program cap) and `tests/admin-guard.test.ts` (session claim, 404 for non-admins, fail closed when Clerk throws).
+- `pnpm exec vitest run` — 47 passed, 10 files. The "role lookup failed" line in the guard test is the fail-closed path, and the test expects it.
+- Not run: a signed-in browser pass. Any signed-in user can still mark a person found; only direct edits are limited to the reporter and admins.
+
 ## 2026-11-14 · Claude (admin rollout steps done: migration applied, first admin set)
 
 - The user approved the three rollout steps, run by separate agents. **Migration 0001 applied to Supabase** (`pnpm db:migrate`; migrations recorded 2): new tables `program_events`, `missing_person_edit_requests` (empty); `programs` gained `status`, `reviewed_by_user_id`, `reviewed_at`, `rejection_reason`, `updated_at`; `missing_person_events.reason`; 4 new indexes. Row counts unchanged (4 missing persons, 5 events, 5 programs, 6 registrations, 0 sms_log, old `users` 0); all 5 existing programs are `approved`. **Name recompute:** dry run found all 4 records already match `normalizeName`, so nothing was updated (no `updated_at` touched).

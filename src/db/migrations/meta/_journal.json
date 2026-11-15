@@ -15,6 +15,13 @@
       "when": 1794698651530,
       "tag": "0001_gigantic_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794702994818,
+      "tag": "0002_bored_maestro",
+      "breakpoints": true
     }
   ]
 }

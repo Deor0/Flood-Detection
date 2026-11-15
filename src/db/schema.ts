@@ -200,3 +200,44 @@ export const missingPersonEditRequests = pgTable(
     index('edit_requests_status_idx').on(t.status),
   ],
 );
+
+/** A flood alert. v1 alerts are simulations; nothing is ever sent. Never deleted. */
+export const floodAlerts = pgTable('flood_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind', { enum: ['simulated', 'real'] }).notNull(),
+    place: text('place').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lng: doublePrecision('lng').notNull(),
+    severity: text('severity', {
+      enum: ['normal', 'watch', 'warning', 'severe', 'unknown'],
+    }).notNull(),
+    returnPeriod: doublePrecision('return_period'),
+    status: text('status', {
+      enum: ['detected', 'verified', 'notified', 'acknowledged'],
+    })
+      .notNull()
+      .default('detected'),
+    createdByUserId: text('created_by_user_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('flood_alerts_status_idx').on(t.status)],
+);
+
+/** Append-only history of an alert. */
+export const floodAlertEvents = pgTable('flood_alert_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    alertId: uuid('alert_id')
+      .notNull()
+      .references(() => floodAlerts.id),
+    kind: text('kind', {
+      enum: ['detected', 'verified', 'notified', 'acknowledged'],
+    }).notNull(),
+    actorUserId: text('actor_user_id').notNull(),
+    message: text('message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('flood_alert_events_alert_idx').on(t.alertId)],
+);

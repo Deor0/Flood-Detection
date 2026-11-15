@@ -53,3 +53,8 @@ export const LIMITS = {
   pendingProgramsPerUser: 5,
   editRequestsPerUserPending: 10,
 } as const;
+
+/** Only admins verify, notify or acknowledge a flood alert. */
+export function canSendAlert(actor: Actor): boolean {
+  return !!actor.isAdmin;
+}

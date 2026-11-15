@@ -1,0 +1,69 @@
+{
+  "title": "Nepal flood and slope failure, 26 Aug 2026 (Bhote Koshi / Trishuli, Rasuwa)",
+  "note": "This is a documented timeline, not an animated river rise. GloFAS and rain data show no spike for this event.",
+  "limitations": [
+    "Debris flows and landslide-dam or glacier-lake floods are not visible to a river model: the 26 Aug 2026 event was a rock-and-ice slope failure that GloFAS discharge and rain data do not show.",
+    "Counts of buildings and people are estimates from satellite mapping."
+  ],
+  "sources": [
+    {
+      "name": "Copernicus Emergency Management Service, EMSR927",
+      "url": "https://rapidmapping.emergency.copernicus.eu/EMSR927",
+      "license": "Copernicus EMS, free and open"
+    },
+    {
+      "name": "GDACS event 1104124 (Red)",
+      "url": "https://www.gdacs.org/",
+      "license": "GDACS, attribution required"
+    },
+    {
+      "name": "BIPAD Portal, Galchi river station (id 281)",
+      "url": "https://bipadportal.gov.np/",
+      "license": "Government of Nepal open data"
+    }
+  ],
+  "series": [],
+  "timeline": [
+    {
+      "at": "2026-08-26T02:52:00Z",
+      "text": "Onset of the rock-and-ice slope failure in the Bhote Koshi / Trishuli area, Rasuwa.",
+      "source": "GDACS event 1104124"
+    },
+    {
+      "at": "2026-08-28T00:00:00Z",
+      "text": "Barrier lake overflow. BIPAD Galchi river station (id 281) readings exist only from 28 Aug.",
+      "source": "BIPAD Portal"
+    },
+    {
+      "at": "2026-10-05T00:00:00Z",
+      "text": "Search and rescue operations ended.",
+      "source": "GDACS event 1104124"
+    }
+  ],
+  "impacts": [
+    {
+      "label": "Areas mapped",
+      "value": "6",
+      "asOf": "2026-10-05",
+      "source": "Copernicus EMS EMSR927"
+    },
+    {
+      "label": "Area affected (hectares)",
+      "value": "1,580",
+      "asOf": "2026-10-05",
+      "source": "Copernicus EMS EMSR927"
+    },
+    {
+      "label": "People in the area (estimate)",
+      "value": "about 7,600",
+      "asOf": "2026-10-05",
+      "source": "Copernicus EMS EMSR927"
+    },
+    {
+      "label": "Buildings in the area (estimate)",
+      "value": "4,685",
+      "asOf": "2026-10-05",
+      "source": "Copernicus EMS EMSR927"
+    }
+  ]
+}

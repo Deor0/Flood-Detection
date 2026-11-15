@@ -1,5 +1,30 @@
-import { ComingSoon } from '@/components/ComingSoon';
+import { Suspense } from 'react';
+import { ListSkeleton } from '@/components/ListSkeleton';
+import { getViewer } from '@/lib/roles';
+import { FloodMapLoader } from './FloodMapLoader';
+import { Disclaimers } from './Disclaimers';
+import styles from './dashboard.module.css';
 
+/** Server shell. The title paints at once; the viewer lookup and the map stream in behind it. */
 export default function Page() {
-  return <ComingSoon title="Dashboard" />;
+  return (
+    <main className={styles.page}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Flood desk</h1>
+        <p className={styles.lede}>
+          Click anywhere on the map to see the nearest river&apos;s discharge, how unusual it is,
+          and a simulated water fill on real terrain.
+        </p>
+      </div>
+      <Suspense fallback={<ListSkeleton />}>
+        <Desk />
+      </Suspense>
+      <Disclaimers />
+    </main>
+  );
+}
+
+async function Desk() {
+  const viewer = await getViewer();
+  return <FloodMapLoader isAdmin={viewer.isAdmin} />;
 }
