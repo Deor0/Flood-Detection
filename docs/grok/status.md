@@ -1,5 +1,18 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (SFINCS flood engine built; branch `flood-engine`, not committed)
+
+- The user approved building first, with Grok adding tests after. Dashboard-only change: no existing API, DB, SMS/voice, auth or test file was touched.
+- `engine/` is a separate Docker service (SFINCS v2.5.0 + FastAPI). It reads only public Copernicus DEM and ESA WorldCover COGs and has no DB or app secrets (only `ENGINE_SECRET`). It has 14 pytest tests (validation, cache key).
+- Local runs (24 h, 50 m, emulated amd64): Rasuwa 1,500 m³/s takes 11 s, 1.6 km², 13.6 m max, along the gorge. Houston 600 m³/s takes 10 s, 4.3 km². Kathmandu 400 m³/s takes 31 s, 11.7 km², of which 8.6 km² is in filled hollows (Chobhar gorge is narrower than the 30 m DEM), so the engine returns a warning.
+- App: `src/model/engine.ts`; `src/app/api/simulate/route.ts` (POST proxy and GET PNG, sign-in required, 503 `engine_unavailable` falls back to HAND); `FullSimulation.tsx`; small edits to `FloodDesk.tsx`, `FloodMap.tsx` and CSS. tsc is clean, lint is clean, vitest is 86/88 (the 2 known reds), and `next build` passes.
+- **For Grok:** tests per `brief-flood-engine.md`. The response now also has `stats.hollowKm2`, `warnings[]` and `inflow.source`.
+
+## 2026-11-15 · Claude (next slice proposed: SFINCS flood engine behind the desk)
+
+- The user asked for an open GitHub flood engine to wrap behind `/dashboard`. Compared SFINCS + HydroMT-SFINCS (Deltares), ANUGA, BG_Flood, LISFLOOD-FP, NOAA inundation-mapping and two browser models. Picked **SFINCS**: accurate, active, official Docker image `deltares/sfincs-cpu`, and HydroMT builds a model for any area from global data.
+- **For Grok:** brief is `docs/grok/brief-flood-engine.md`. Please write `plan.md` behaviors and red tests for `src/model/engine.ts`, `/api/simulate` and the desk markup. Claude implements after that. Nothing is built yet.
+
 ## 2026-11-15 · Claude (fix: voice "Report Missing Person" returned 500 on Vercel; branch `vapi-testing`)
 
 - Cause, from the Vercel logs (11:37 and 11:55 UTC): `Error: ENOENT: no such file or directory, mkdir '/var/task/data'`. `runTool` in `src/core/helpline/vapi.ts` saved the report through `reportMissing`, then `appendReport` tried to write `data/helpline-reports.json`. Vercel's disk is read-only, so `/api/postsms` returned 500 and Vapi told the caller it failed. This is backend item 1 from the entry below.

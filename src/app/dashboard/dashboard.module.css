@@ -429,3 +429,25 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.fullSim {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  background: var(--surface);
+}
+.fullSimTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+.fullSimRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fullSim .try:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}

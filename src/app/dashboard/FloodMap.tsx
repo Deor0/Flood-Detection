@@ -45,6 +45,8 @@ type Props = {
   labels?: { a: string; b: string };
   /** Overrides the legend's darkest depth; by default it follows the overlays' `rampMax`. */
   legend?: { rampMax: number } | null;
+  /** Legend title for the layer on show. */
+  layerLabel?: string;
   onPick: (lat: number, lng: number) => void;
   /** Ask the map to fly somewhere; a new `key` triggers a new flight. */
   view: { lat: number; lng: number; zoom: number; key: number } | null;
@@ -130,10 +132,10 @@ function SwipeClip({
 
 const rgb = (c: [number, number, number]) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 
-function Legend({ rampMax, note }: { rampMax: number; note?: string }) {
+function Legend({ rampMax, note, title }: { rampMax: number; note?: string; title: string }) {
   return (
     <div className={mapStyles.legend} role="group" aria-label="Depth legend">
-      <span className={mapStyles.legendTitle}>Depth above ground, central estimate</span>
+      <span className={mapStyles.legendTitle}>{title}</span>
       <span
         className={mapStyles.legendBar}
         style={{ background: `linear-gradient(to right, ${rgb(RAMP_SHALLOW)}, ${rgb(RAMP_DEEP)})` }}
@@ -144,10 +146,12 @@ function Legend({ rampMax, note }: { rampMax: number; note?: string }) {
         <span>{rampMax.toFixed(rampMax < 10 ? 1 : 0)} m</span>
       </span>
       {note && <span className={mapStyles.legendLine}>{note}</span>}
-      <span className={mapStyles.legendLine}>
-        <span className={mapStyles.dashSwatch} aria-hidden="true" />
-        Upper edge of the likely range
-      </span>
+      {!title.includes('SFINCS') && (
+        <span className={mapStyles.legendLine}>
+          <span className={mapStyles.dashSwatch} aria-hidden="true" />
+          Upper edge of the likely range
+        </span>
+      )}
     </div>
   );
 }
@@ -161,6 +165,7 @@ export default function FloodMap({
   compare = false,
   labels = { a: 'A', b: 'B' },
   legend = null,
+  layerLabel = 'Depth above ground, central estimate',
   onPick,
   view,
 }: Props) {
@@ -278,7 +283,7 @@ export default function FloodMap({
         </>
       )}
 
-      {rampMax && <Legend rampMax={rampMax} note={legendNote} />}
+      {rampMax && <Legend rampMax={rampMax} note={legendNote} title={layerLabel} />}
     </div>
   );
 }
