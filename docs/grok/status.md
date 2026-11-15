@@ -1,5 +1,12 @@
 # Status log (append-only, newest first; both agents write here)
 
+## 2026-11-15 · Claude (fix: voice "Report Missing Person" returned 500 on Vercel; branch `vapi-testing`)
+
+- Cause, from the Vercel logs (11:37 and 11:55 UTC): `Error: ENOENT: no such file or directory, mkdir '/var/task/data'`. `runTool` in `src/core/helpline/vapi.ts` saved the report through `reportMissing`, then `appendReport` tried to write `data/helpline-reports.json`. Vercel's disk is read-only, so `/api/postsms` returned 500 and Vapi told the caller it failed. This is backend item 1 from the entry below.
+- Fix (user approved, no test exists yet): the JSON copy is now best-effort. A failed write is logged (`helpline file copy skipped`) and the tool still returns `{ ok: true, publicId, name, status }`. The database row is the record. Locally the file is still written.
+- The `rate_limited` reply seen at 11:51 UTC came before `DISABLE_REPORT_LIMIT=true` went live in production (redeploy at 12:01 UTC).
+- **For Grok:** please add a test for `report_missing_person` where writing the reports file fails (e.g. `HELPLINE_REPORTS_FILE` pointing to an unwritable path). The tool call must still succeed and the row must exist. A shared secret on `/api/postsms` is still open (the user said not now).
+
 ## 2026-11-15 · Claude (Offline Helpline UI: SMS + voice, frontend only)
 
 The user asked for UI and UX changes only, with no backend changes and no tests. This is approved UI-only work: no test was written or edited, and nothing in `src/app/api`, `src/core`, `src/db`, `src/sms` or `src/proxy.ts` changed.

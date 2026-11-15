@@ -156,7 +156,13 @@ async function runTool(db: AppDb, callerPhone: string | null, call: VapiToolCall
   }
 
   const record = toHelplineReport(saved.person);
-  await appendReport(record);
+  // The database row is the record. The JSON copy is a local convenience: on Vercel the disk is
+  // read-only, so a failed copy must not turn a saved report into a 500 for the caller.
+  try {
+    await appendReport(record);
+  } catch (err) {
+    console.error('helpline file copy skipped:', (err as Error).message);
+  }
   return {
     ok: true,
     publicId: publicId(saved.person.publicNumber),
