@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ListSkeleton } from '@/components/ListSkeleton';
-import { SignInLink } from '@/components/SignInLink';
 import ui from '@/components/page-ui.module.css';
 import { getViewer } from '@/lib/roles';
 import { FloodMapLoader } from './FloodMapLoader';
@@ -31,11 +30,11 @@ async function Desk() {
   const viewer = await getViewer();
   return (
     <>
-      {/* /api/flood and /api/dem still answer 401 to signed-out callers (pinned by tests). */}
+      {/* River lookups are public; only recording a simulated alert needs an admin account. */}
       {!viewer.userId && (
         <p className={ui.lede}>
-          Live river lookups need an account. <SignInLink small to="look up live river data" /> or
-          open the <Link href="/demo">saved demo</Link>, which works without one.
+          No account needed: click any river to look it up. Recording a simulated alert is for
+          admins. For a quick tour, open the <Link href="/demo">saved demo</Link>.
         </p>
       )}
       <FloodMapLoader isAdmin={viewer.isAdmin} />

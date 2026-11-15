@@ -14,7 +14,9 @@ import {
   CircleMarker,
   ImageOverlay,
   MapContainer,
+  Polyline,
   TileLayer,
+  Tooltip,
   useMap,
   useMapEvents,
 } from 'react-leaflet';
@@ -48,6 +50,12 @@ type Props = {
   onPick: (lat: number, lng: number) => void;
   /** Ask the map to fly somewhere; a new `key` triggers a new flight. */
   view: { lat: number; lng: number; zoom: number; key: number } | null;
+  /** Optional estimate: a dashed line from the click to the nearest high ground, with a label. */
+  wayHome?: {
+    from: { lat: number; lng: number };
+    to: { lat: number; lng: number };
+    label: string;
+  } | null;
 };
 
 function ClickCatcher({ onPick }: Pick<Props, 'onPick'>) {
@@ -163,6 +171,7 @@ export default function FloodMap({
   legend = null,
   onPick,
   view,
+  wayHome = null,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const aRef = useRef<LeafletImageOverlay | null>(null);
@@ -241,6 +250,27 @@ export default function FloodMap({
             radius={7}
             pathOptions={{ color: '#2B4FC7', fillColor: '#2B4FC7', fillOpacity: 0.9, weight: 2 }}
           />
+        )}
+        {wayHome && (
+          <>
+            <Polyline
+              positions={[
+                [wayHome.from.lat, wayHome.from.lng],
+                [wayHome.to.lat, wayHome.to.lng],
+              ]}
+              pathOptions={{ color: '#0B1F3A', weight: 2.5, dashArray: '6 6', opacity: 0.9 }}
+              interactive={false}
+            />
+            <CircleMarker
+              center={[wayHome.to.lat, wayHome.to.lng]}
+              radius={6}
+              pathOptions={{ color: '#0B1F3A', fillColor: '#F2C14E', fillOpacity: 1, weight: 2 }}
+            >
+              <Tooltip permanent direction="top" offset={[0, -6]}>
+                {wayHome.label}
+              </Tooltip>
+            </CircleMarker>
+          </>
         )}
         <ClickCatcher onPick={onPick} />
         <FlyTo view={view} />

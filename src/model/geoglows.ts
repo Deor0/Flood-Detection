@@ -54,7 +54,12 @@ export function compactDate(ymd: string): string {
   return ymd.replace(/-/g, '');
 }
 
-const RETRY_DELAYS_MS = [2_000, 4_000, 8_000];
+/** Short pauses for a burst limit (429) or 503; kept small so a cold lookup stays under a minute. */
+const RETRY_DELAYS_MS = [1_000, 2_500];
+/** Parallel requests allowed while searching nearby reaches (bursts above this trip the limit). */
+export const REACH_CONCURRENCY = 3;
+const REACH_TIMEOUT_MS = 8_000;
+const RECENT_TIMEOUT_MS = 12_000;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** GET and parse JSON. A short burst limit (429) or a 503 is retried with a growing pause. */
@@ -86,7 +91,10 @@ async function getJson(url: string, timeoutMs: number): Promise<unknown> {
 
 /** The river reach nearest to a point. Throws when the service gives no usable id. */
 export async function findReach(lat: number, lng: number): Promise<number> {
-  const body = (await getJson(`${GEOGLOWS_BASE}/getriverid?lat=${lat}&lon=${lng}`, 10_000)) as {
+  const body = (await getJson(
+    `${GEOGLOWS_BASE}/getriverid?lat=${lat}&lon=${lng}`,
+    REACH_TIMEOUT_MS,
+  )) as {
     river_id?: unknown;
   } | null;
   const id = Number(body?.river_id);
@@ -122,7 +130,11 @@ export async function fetchHistory(
 
 export type ForecastDaily = DailySeries & { band: EnsembleBand };
 
-/** Daily means of the forecast statistics; the median is the day's discharge. */
+/**
+ * Daily forecast statistics from the 1 to 3 hour steps. The band's edges keep the day's extremes
+ * (lowest minimum, highest maximum) so the spread is never narrower than any hour in it; the
+ * quartiles and the median are daily means, and the median is the day's discharge.
+ */
 export function parseForecastStats(json: unknown): ForecastDaily {
   const o = json as Record<string, unknown> | null;
   const times = o?.datetime;
@@ -150,18 +162,21 @@ export function parseForecastStats(json: unknown): ForecastDaily {
   const days = [...buckets.keys()].sort();
   const mean = (xs: number[]): number | null =>
     xs.length === 0 ? null : xs.reduce((a, b) => a + b, 0) / xs.length;
-  const column = (name: keyof typeof FORECAST_KEYS) => days.map((d) => mean(buckets.get(d)![name]));
+  const lowest = (xs: number[]): number | null => (xs.length === 0 ? null : Math.min(...xs));
+  const highest = (xs: number[]): number | null => (xs.length === 0 ? null : Math.max(...xs));
+  const column = (name: keyof typeof FORECAST_KEYS, reduce = mean) =>
+    days.map((d) => reduce(buckets.get(d)![name]));
 
   return {
     days,
     discharge: column('median'),
     band: {
       days,
-      min: column('min'),
+      min: column('min', lowest),
       p25: column('p25'),
       median: column('median'),
       p75: column('p75'),
-      max: column('max'),
+      max: column('max', highest),
     },
   };
 }
@@ -217,16 +232,11 @@ export async function chooseReach(lat: number, lng: number, today: string): Prom
       });
     }
   }
-  // One request at a time: bursts of parallel requests trigger the service's rate limit.
-  const looked: PromiseSettledResult<{ lat: number; lng: number; id: number }>[] = [];
-  for (const p of points) {
-    try {
-      looked.push({ status: 'fulfilled', value: { ...p, id: await findReach(p.lat, p.lng) } });
-    } catch (reason) {
-      looked.push({ status: 'rejected', reason });
-    }
-    await pause(150);
-  }
+  // At most REACH_CONCURRENCY requests at once: faster than one by one, gentle on the rate limit.
+  const looked = await mapSettled(points, REACH_CONCURRENCY, async (p) => ({
+    ...p,
+    id: await findReach(p.lat, p.lng),
+  }));
   const seen = new Set<number>();
   const candidates: { id: number; lat: number; lng: number }[] = [];
   for (const r of looked) {
@@ -238,15 +248,9 @@ export async function chooseReach(lat: number, lng: number, today: string): Prom
   if (candidates.length === 0) throw new GeoglowsError('No river reach found');
 
   const start = addDaysTo(today, -90);
-  const recent: PromiseSettledResult<DailySeries>[] = [];
-  for (const c of candidates) {
-    try {
-      recent.push({ status: 'fulfilled', value: await fetchHistory(c.id, start, today, 20_000) });
-    } catch (reason) {
-      recent.push({ status: 'rejected', reason });
-    }
-    await pause(150);
-  }
+  const recent = await mapSettled(candidates, REACH_CONCURRENCY, (c) =>
+    fetchHistory(c.id, start, today, RECENT_TIMEOUT_MS),
+  );
 
   let best: ChosenReach | null = null;
   const dist = (c: { lat: number; lng: number }) => (c.lat - lat) ** 2 + (c.lng - lng) ** 2;
@@ -268,4 +272,31 @@ function addDaysTo(ymd: string, delta: number): string {
   const d = new Date(`${ymd}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + delta);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Runs `fn` over `items` with at most `limit` calls in flight, keeping the input order in the
+ * result. Like Promise.allSettled: one failure does not stop the others.
+ */
+export async function mapSettled<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const out: PromiseSettledResult<R>[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      try {
+        out[i] = { status: 'fulfilled', value: await fn(items[i], i) };
+      } catch (reason) {
+        out[i] = { status: 'rejected', reason };
+      }
+    }
+  };
+  const lanes = Math.max(1, Math.min(limit, items.length));
+  await Promise.all(Array.from({ length: lanes }, worker));
+  return out;
 }

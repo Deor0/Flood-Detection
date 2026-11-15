@@ -84,6 +84,11 @@ export function AlertPanel(props: Props) {
       </div>
       <p className={styles.muted}>Shown on screen only. No SMS, call or message is sent.</p>
       {isAdmin && (
+        <p className={styles.muted}>
+          Beacon fires: detected → verified → notified. Each step is recorded; nothing is sent.
+        </p>
+      )}
+      {isAdmin && (
         <div className={styles.alertActions}>
           {!alert ? (
             <button

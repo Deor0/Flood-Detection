@@ -9,13 +9,19 @@ import { ScenarioPanel } from './ScenarioPanel';
 import {
   DEFAULT_SCENARIO,
   forecastDays,
+  normalFlowFor,
   plainSeverity,
   resolveScenario,
+  splitSeverity,
+  surgeLine,
   todayIso,
+  wayHomeLabel,
   type ScenarioState,
 } from './scenario';
 import { liveSource, type FloodSource } from './sources';
 import {
+  latLngOf,
+  pixelOf,
   prepareTerrain,
   renderOverlay,
   simulate,
@@ -76,6 +82,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
   } | null>(null);
   const [saved, setSaved] = useState<{ label: string; overlay: Overlay | null } | null>(null);
   const [compareOn, setCompareOn] = useState(true);
+  const [wayHomeOn, setWayHomeOn] = useState(true);
   const abort = useRef<AbortController | null>(null);
   const terrainRef = useRef<Terrain | null>(null);
   const flights = useRef(0);
@@ -175,16 +182,29 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
 
   // Re-run the water fill when the flow or roughness changes; the terrain is only prepared once.
   // The last result stays on screen while the next one is computed, so the map does not flicker.
+  // The terrain already shows the river at its normal flow, so only the rise above it is drawn.
   const q = resolved?.q ?? null;
+  const qBase = useMemo(() => (data ? normalFlowFor(data, today) : null), [data, today]);
+  // The high-ground search starts at the click when it is inside the terrain window.
+  const origin = useMemo(
+    () => (terrain && picked ? pixelOf(terrain, picked.lat, picked.lng) : null),
+    [terrain, picked],
+  );
+  const originKey = origin ? `${origin.x},${origin.y}` : '';
   const canSim = terrain !== null && q !== null && q > 0;
-  const simKey = canSim ? `${q}|${scenario.roughness}` : null;
+  const simKey = canSim ? `${q}|${scenario.roughness}|${qBase}|${originKey}` : null;
   useEffect(() => {
     if (!terrain || q === null || q <= 0) return;
-    const key = `${q}|${scenario.roughness}`;
+    const key = `${q}|${scenario.roughness}|${qBase}|${originKey}`;
     let current = true;
     const timer = setTimeout(async () => {
       try {
-        const sim = await simulate(terrain, { q, nScale: scenario.roughness });
+        const sim = await simulate(terrain, {
+          q,
+          nScale: scenario.roughness,
+          qBase: qBase ?? undefined,
+          origin: origin ?? undefined,
+        });
         if (!current) return;
         const drawn = renderOverlay(terrain, sim);
         setResult({ key, sim, overlay: drawn.url ? drawn : null });
@@ -199,7 +219,9 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
       current = false;
       clearTimeout(timer);
     };
-  }, [terrain, q, scenario.roughness]);
+    // `origin` is captured through `originKey`, which changes whenever it does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [terrain, q, scenario.roughness, qBase, originKey]);
   const sim = canSim ? (result?.sim ?? null) : null;
   const overlay = canSim ? (result?.overlay ?? null) : null;
   const simulating = simKey !== null && result?.key !== simKey;
@@ -210,6 +232,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
   );
 
   const severity = data?.current?.severity ?? 'unknown';
+  const split = data ? splitSeverity(data) : null;
   const place =
     data?.place || (data ? `${data.snapped.lat.toFixed(2)}, ${data.snapped.lng.toFixed(2)}` : '');
   const forecast = data?.forecast ?? null;
@@ -223,6 +246,25 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
     data?.current?.returnPeriod != null
       ? { value: data.current.returnPeriod, capped: data.current.capped }
       : null;
+  const forecastRp =
+    forecast && forecast.returnPeriod != null && (forecast.daysAhead ?? 0) >= 1
+      ? { value: forecast.returnPeriod, capped: forecast.capped }
+      : null;
+  // The surge line follows whichever of today and the forecast peak drives the headline.
+  const surge =
+    split && split.forecastPeak !== 'unknown' && severity === split.forecastPeak && forecastRp
+      ? surgeLine(split.forecastPeak, forecastRp, 'forecast')
+      : surgeLine(split?.today ?? 'unknown', todayRp, 'today');
+
+  // Way home: dashed line from the click to the nearest cell that stays dry at this level.
+  const hg = sim?.highGround ?? null;
+  const wayHome = useMemo(() => {
+    if (!terrain || !hg) return null;
+    const from = latLngOf(terrain, hg.fromX, hg.fromY);
+    const to = latLngOf(terrain, hg.x, hg.y);
+    return { from, to, label: wayHomeLabel(from, to, hg.distM) };
+  }, [terrain, hg]);
+  const showWayHome = mode === 'live' && overlay !== null && wayHome !== null;
 
   return (
     <div className={styles.desk}>
@@ -257,8 +299,8 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
         <>
           {demo && (
             <p className={styles.demoBanner}>
-              Demo with saved data. Choose one of the rivers below; sign in to check any river in
-              the world.
+              Demo with saved data. Choose one of the rivers below, or open the live flood desk to
+              check any river in the world (no account needed).
             </p>
           )}
           <div className={styles.toolbar}>
@@ -298,6 +340,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                 compare={comparing}
                 labels={{ a: 'A (saved)', b: 'B (now)' }}
                 onPick={demo ? () => undefined : onPick}
+                wayHome={showWayHome && wayHomeOn ? wayHome : null}
               />
               <section className={styles.panel} aria-live="polite">
                 {status === 'idle' && !picked && (
@@ -316,7 +359,7 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                 {status === 'error' && <p className={styles.error}>{error}</p>}
                 {data?.noRiver && (
                   <p>
-                    No river found within about 5 km of that point in the GloFAS data. Try a point
+                    No river found within about 3 km of that point in the river model. Try a point
                     on or beside a large river.
                   </p>
                 )}
@@ -324,11 +367,20 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                   <>
                     <div className={styles.headline}>
                       <h2 className={styles.h2}>{place}</h2>
-                      <span className={`${styles.severity} ${styles[`sev_${severity}`]}`}>
-                        {SEVERITY_LABEL[severity]}
+                      <span
+                        className={`${styles.severity} ${styles[`sev_${severity}`]}`}
+                        title="Headline colour: the worse of today and the next 15 days"
+                      >
+                        Today: {SEVERITY_LABEL[split?.today ?? 'unknown']} · Next 15 days:{' '}
+                        {SEVERITY_LABEL[split?.forecastPeak ?? 'unknown']}
                       </span>
                     </div>
                     <p className={styles.plain}>
+                      {surge && (
+                        <>
+                          <strong>{surge}.</strong>{' '}
+                        </>
+                      )}
                       {plainSeverity(
                         sameAsToday ? todayRp : resolved.returnPeriod,
                         sameAsToday ? data.climatology?.returnPeriodRange : undefined,
@@ -346,8 +398,8 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                       <div>
                         <dt>
                           {data.current?.dischargeDate
-                            ? `Discharge on ${data.current.dischargeDate} (GloFAS model value)`
-                            : 'Discharge (GloFAS model value)'}
+                            ? `Discharge on ${data.current.dischargeDate} (model value)`
+                            : 'Discharge (model value)'}
                         </dt>
                         <dd>
                           {data.current?.discharge == null
@@ -385,9 +437,24 @@ export default function FloodDesk({ isAdmin, source = liveSource, presets, demo 
                     <p className={styles.showing}>{resolved.summary}</p>
                     {sim && (
                       <p className={styles.depthRange}>
-                        Water depth near the river: likely {fmtM(sim.stage.low)} to{' '}
-                        {fmtM(sim.stage.high)} m (middle estimate {fmtM(sim.stage.central)} m).
+                        Water rise above the river&apos;s normal level: likely {fmtM(sim.stage.low)}{' '}
+                        to {fmtM(sim.stage.high)} m (middle estimate {fmtM(sim.stage.central)} m).
                         Assumed channel roughness, 30% either way.
+                      </p>
+                    )}
+                    {showWayHome && wayHome && (
+                      <p className={styles.infoLine}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={wayHomeOn}
+                            onChange={(e) => setWayHomeOn(e.target.checked)}
+                          />{' '}
+                          Way home (estimate): {wayHome.label}
+                          {origin ? ' from your click' : ' from the river point'}. Straight line on
+                          the terrain model, not a route; roads, walls and local knowledge come
+                          first.
+                        </label>
                       </p>
                     )}
                     {data.series && (
